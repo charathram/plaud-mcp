@@ -14,7 +14,8 @@ mkdir -p dist
 for target in "${TARGETS[@]}"; do
   # Extract os and arch from target string (e.g. bun-linux-x64 -> linux-x64)
   suffix="${target#bun-}"
-  outfile="dist/plaud-mcp-${suffix}"
+  mkdir -p "dist/${suffix}"
+  outfile="dist/${suffix}/plaud-mcp"
   if [[ "$target" == *"windows"* ]]; then
     outfile="${outfile}.exe"
   fi
@@ -25,4 +26,4 @@ done
 
 echo ""
 echo "All builds complete:"
-ls -lh dist/plaud-mcp-*
+find dist -type f -name "plaud-mcp*" -exec ls -lh {} \;

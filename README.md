@@ -40,24 +40,24 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 
 Download the binary for your platform from the latest release:
 
-| File | Platform |
-|------|----------|
-| `plaud-mcp-linux-x64` | Linux x86_64 |
-| `plaud-mcp-linux-arm64` | Linux ARM64 |
-| `plaud-mcp-darwin-x64` | macOS Intel |
-| `plaud-mcp-darwin-arm64` | macOS Apple Silicon |
-| `plaud-mcp-windows-x64.exe` | Windows x86_64 |
+| Directory | Platform |
+|-----------|----------|
+| `linux-x64/plaud-mcp` | Linux x86_64 |
+| `linux-arm64/plaud-mcp` | Linux ARM64 |
+| `darwin-x64/plaud-mcp` | macOS Intel |
+| `darwin-arm64/plaud-mcp` | macOS Apple Silicon |
+| `windows-x64/plaud-mcp.exe` | Windows x86_64 |
 
 Make the binary executable (Linux/macOS):
 
 ```bash
-chmod +x plaud-mcp-*
+chmod +x plaud-mcp
 ```
 
 **macOS users:** If you see a "damaged and can't be opened" error, remove the quarantine attribute:
 
 ```bash
-xattr -d com.apple.quarantine plaud-mcp-darwin-*
+xattr -d com.apple.quarantine plaud-mcp
 ```
 
 ### 2. Login
@@ -65,13 +65,13 @@ xattr -d com.apple.quarantine plaud-mcp-darwin-*
 Run the login command using the binary:
 
 ```bash
-./plaud-mcp-darwin-arm64 --login
+./plaud-mcp --login
 ```
 
 To save credentials to a custom location:
 
 ```bash
-./plaud-mcp-darwin-arm64 --login --env /path/to/custom/.env
+./plaud-mcp --login --env /path/to/custom/.env
 ```
 
 This opens your browser to web.plaud.ai. Log in normally — auth credentials are captured automatically and saved to `.env` (or the path specified with `--env`). The following values are stored:
@@ -84,7 +84,7 @@ This opens your browser to web.plaud.ai. Log in normally — auth credentials ar
 Chrome, Chromium, Brave, Edge, and Firefox are auto-detected on Linux, macOS, and Windows. For other browsers, specify the binary with `--browser`:
 
 ```bash
-./plaud-mcp-darwin-arm64 --login --browser /usr/bin/brave-browser
+./plaud-mcp --login --browser /usr/bin/brave-browser
 ```
 
 Alternatively, if building from source:
