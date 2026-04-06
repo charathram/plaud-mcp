@@ -12,6 +12,12 @@ if (process.argv.includes("--version")) {
   process.exit(0);
 }
 
+if (process.argv.includes("--login")) {
+  const login = await import("./login.js");
+  await login.default;
+  process.exit(0);
+}
+
 const server = new McpServer({
   name: "plaud",
   version: pkg.version,

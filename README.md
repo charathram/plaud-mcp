@@ -33,7 +33,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 
 ### Prerequisites
 
-- A Chromium-based browser for the login flow (Chrome, Chromium, Brave, Edge, etc.). Firefox and Safari are not supported.
+- A supported browser for the login flow: Chrome, Chromium, Brave, Edge, Firefox, or any Chromium-based browser. Safari is not supported.
 - Pre-built binary for your platform (see [Releases](../../releases)), **or** [Bun](https://bun.sh) v1.3+ if building from source
 
 ### 1. Download the binary
@@ -56,30 +56,36 @@ chmod +x plaud-mcp-*
 
 ### 2. Login
 
-The login command requires Bun (it uses puppeteer-core to open a browser). Clone the repo and run:
+Run the login command using the binary:
 
 ```bash
-bun install
-bun run login
+./plaud-mcp-darwin-arm64 --login
 ```
 
 To save credentials to a custom location:
 
 ```bash
-bun run login -- --env /path/to/custom/.env
+./plaud-mcp-darwin-arm64 --login --env /path/to/custom/.env
 ```
 
-This opens Chromium to web.plaud.ai. Log in normally — auth credentials are captured automatically and saved to `.env` (or the path specified with `--env`). The following values are stored:
+This opens your browser to web.plaud.ai. Log in normally — auth credentials are captured automatically and saved to `.env` (or the path specified with `--env`). The following values are stored:
 
 - `PLAUD_AUTH_TOKEN` — JWT bearer token
 - `PLAUD_DEVICE_TAG` — device tag header
 - `PLAUD_USER_HASH` — user hash header
 - `PLAUD_DEVICE_ID` — device ID header
 
-Chrome, Chromium, Brave, and Edge are auto-detected on Linux, macOS, and Windows. For other Chromium-based browsers, specify the binary with `--browser`:
+Chrome, Chromium, Brave, Edge, and Firefox are auto-detected on Linux, macOS, and Windows. For other browsers, specify the binary with `--browser`:
 
 ```bash
-bun run login -- --browser /usr/bin/brave-browser
+./plaud-mcp-darwin-arm64 --login --browser /usr/bin/brave-browser
+```
+
+Alternatively, if building from source:
+
+```bash
+bun install
+bun run login
 ```
 
 Or via the `CHROME_PATH` environment variable:

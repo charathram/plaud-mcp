@@ -22,6 +22,11 @@ function getBrowserPaths(): string[] {
     "/usr/bin/microsoft-edge",
     "/usr/bin/microsoft-edge-stable",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    // Firefox
+    "/usr/bin/firefox",
+    "/usr/bin/firefox-esr",
+    "/snap/bin/firefox",
+    "/Applications/Firefox.app/Contents/MacOS/firefox",
   ];
 
   if (process.platform === "win32") {
@@ -41,6 +46,9 @@ function getBrowserPaths(): string[] {
       // Edge
       `${pf}\\Microsoft\\Edge\\Application\\msedge.exe`,
       `${pf86}\\Microsoft\\Edge\\Application\\msedge.exe`,
+      // Firefox
+      `${pf}\\Mozilla Firefox\\firefox.exe`,
+      `${pf86}\\Mozilla Firefox\\firefox.exe`,
     );
   }
 
@@ -53,31 +61,34 @@ function findBrowser(): string {
   }
   throw new Error(
     "No supported browser found. Use --browser /path/to/browser or set CHROME_PATH env var.\n" +
-    "Supported: Chrome, Chromium, Brave, Edge, or any Chromium-based browser."
+    "Supported: Chrome, Chromium, Brave, Edge, Firefox, or any Chromium-based browser."
   );
+}
+
+function isFirefox(browserPath: string): boolean {
+  return /firefox/i.test(browserPath);
 }
 
 async function main() {
   const args = process.argv.slice(2);
   const browserFlag = args.indexOf("--browser");
-  const chromePath =
+  const browserPath =
     (browserFlag !== -1 && args[browserFlag + 1]) ||
     process.env.CHROME_PATH ||
     findBrowser();
-  console.log(`Using browser: ${chromePath}`);
+  console.log(`Using browser: ${browserPath}`);
   console.log("Opening Plaud login page...\n");
 
+  const ff = isFirefox(browserPath);
   const browser = await puppeteer.launch({
-    executablePath: chromePath,
+    executablePath: browserPath,
+    browser: ff ? "firefox" : "chrome",
     headless: false,
-    args: ["--no-first-run", "--no-default-browser-check"],
+    args: ff ? [] : ["--no-first-run", "--no-default-browser-check"],
     defaultViewport: null,
   });
 
   const page = (await browser.pages())[0] ?? (await browser.newPage());
-
-  const cdp = await page.createCDPSession();
-  await cdp.send("Network.enable");
 
   console.log("Waiting for you to log in at web.plaud.ai...");
 
@@ -87,12 +98,12 @@ async function main() {
     userHash: string;
     deviceId: string;
   }>((resolve) => {
-    cdp.on("Network.requestWillBeSent", (event: any) => {
-      const url: string = event.request.url;
+    page.on("request", (request) => {
+      const url = request.url();
       if (!url.includes("api.plaud.ai")) return;
 
-      const headers = event.request.headers;
-      const authToken = (headers["Authorization"] || headers["authorization"] || "")
+      const headers = request.headers();
+      const authToken = (headers["authorization"] || "")
         .replace(/^bearer\s+/i, "");
 
       if (!authToken) return;
@@ -123,7 +134,7 @@ async function main() {
   console.log("Done. You can now use the MCP server.");
 }
 
-main().catch((err) => {
+export default main().catch((err) => {
   console.error("Login failed:", err.message);
   process.exit(1);
 });
