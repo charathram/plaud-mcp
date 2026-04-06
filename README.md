@@ -110,10 +110,10 @@ The server looks for credentials in this order:
 
 ```bash
 # Uses .env in current directory
-./plaud-mcp-linux-x64
+./plaud-mcp
 
 # Or specify a custom path
-./plaud-mcp-linux-x64 --env /path/to/.env
+./plaud-mcp --env /path/to/.env
 ```
 
 ### 4. Configure Claude Code
@@ -124,7 +124,7 @@ Add to `~/.claude/settings.json`:
 {
   "mcpServers": {
     "plaud": {
-      "command": "/path/to/plaud-mcp-linux-x64",
+      "command": "/path/to/plaud-mcp",
       "args": ["--env", "/path/to/.env"]
     }
   }
@@ -137,7 +137,7 @@ Or use the `PLAUD_ENV_FILE` environment variable instead:
 {
   "mcpServers": {
     "plaud": {
-      "command": "/path/to/plaud-mcp-linux-x64",
+      "command": "/path/to/plaud-mcp",
       "env": {
         "PLAUD_ENV_FILE": "/path/to/.env"
       }
