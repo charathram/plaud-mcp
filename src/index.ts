@@ -7,6 +7,21 @@ import { renameFile, batchRename, moveToFolder, trashFile } from "./tools/mutati
 import { listFolders } from "./tools/folders.js";
 import pkg from "../package.json";
 
+if (process.argv.includes("--help") || process.argv.includes("-h")) {
+  console.log(`plaud-mcp v${pkg.version} — MCP server for Plaud.ai
+
+Usage:
+  plaud-mcp              Start the MCP server (stdio transport)
+  plaud-mcp --login      Open a browser to capture Plaud login credentials
+  plaud-mcp --version    Print version and exit
+  plaud-mcp --help       Show this help message
+
+Login options:
+  --env <path>           Save credentials to a custom .env file path
+  --browser <path>       Use a specific browser binary for login`);
+  process.exit(0);
+}
+
 if (process.argv.includes("--version")) {
   console.log(pkg.version);
   process.exit(0);
