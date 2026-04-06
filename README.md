@@ -1,1 +1,238 @@
 # plaud-mcp
+
+An MCP (Model Context Protocol) server for the [Plaud](https://web.plaud.ai) audio recording platform. Exposes Plaud's API as MCP tools, allowing AI assistants like Claude to list recordings, fetch transcripts and summaries, rename files, manage folders, and more.
+
+Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binary for Linux, macOS, and Windows.
+
+## Features
+
+- **11 MCP tools** covering the full Plaud API surface
+- **Browser-based login** — no manual token extraction needed
+- **Cross-platform binaries** — single-file executables, no runtime dependencies
+- **Stdio transport** — works with any MCP-compatible client
+
+### Available Tools
+
+| Tool | Description |
+|------|-------------|
+| `plaud_list_files` | List all recordings, optionally filtered by transcription status or minimum duration |
+| `plaud_get_file` | Get detailed metadata for a specific file |
+| `plaud_search_files` | Search recordings by keyword or date range |
+| `plaud_get_transcript` | Fetch raw or polished transcript text |
+| `plaud_get_summary` | Fetch AI-generated summary |
+| `plaud_rename_file` | Rename a single file |
+| `plaud_batch_rename` | Rename multiple files at once (rate-limited) |
+| `plaud_move_to_folder` | Move a file to a folder |
+| `plaud_list_folders` | List all folders/tags |
+| `plaud_trash_file` | Move a file to trash |
+| `plaud_get_user` | Get current user profile |
+
+---
+
+## Usage
+
+### Prerequisites
+
+- A Chromium-based browser for the login flow (Chrome, Chromium, Brave, Edge, etc.). Firefox and Safari are not supported.
+- Pre-built binary for your platform (see [Releases](../../releases)), **or** [Bun](https://bun.sh) v1.3+ if building from source
+
+### 1. Download the binary
+
+Download the binary for your platform from the latest release:
+
+| File | Platform |
+|------|----------|
+| `plaud-mcp-linux-x64` | Linux x86_64 |
+| `plaud-mcp-linux-arm64` | Linux ARM64 |
+| `plaud-mcp-darwin-x64` | macOS Intel |
+| `plaud-mcp-darwin-arm64` | macOS Apple Silicon |
+| `plaud-mcp-windows-x64.exe` | Windows x86_64 |
+
+Make the binary executable (Linux/macOS):
+
+```bash
+chmod +x plaud-mcp-*
+```
+
+### 2. Login
+
+The login command requires Bun (it uses puppeteer-core to open a browser). Clone the repo and run:
+
+```bash
+bun install
+bun run login
+```
+
+To save credentials to a custom location:
+
+```bash
+bun run login -- --env /path/to/custom/.env
+```
+
+This opens Chromium to web.plaud.ai. Log in normally — auth credentials are captured automatically and saved to `.env` (or the path specified with `--env`). The following values are stored:
+
+- `PLAUD_AUTH_TOKEN` — JWT bearer token
+- `PLAUD_DEVICE_TAG` — device tag header
+- `PLAUD_USER_HASH` — user hash header
+- `PLAUD_DEVICE_ID` — device ID header
+
+Chrome, Chromium, Brave, and Edge are auto-detected on Linux, macOS, and Windows. For other Chromium-based browsers, specify the binary with `--browser`:
+
+```bash
+bun run login -- --browser /usr/bin/brave-browser
+```
+
+Or via the `CHROME_PATH` environment variable:
+
+```bash
+CHROME_PATH=/usr/bin/brave-browser bun run login
+```
+
+### 3. Run the server
+
+The server looks for credentials in this order:
+
+1. `--env /path/to/.env` flag
+2. `PLAUD_ENV_FILE` environment variable
+3. `.env` in the current working directory
+
+```bash
+# Uses .env in current directory
+./plaud-mcp-linux-x64
+
+# Or specify a custom path
+./plaud-mcp-linux-x64 --env /path/to/.env
+```
+
+### 4. Configure Claude Code
+
+Add to `~/.claude/settings.json`:
+
+```json
+{
+  "mcpServers": {
+    "plaud": {
+      "command": "/path/to/plaud-mcp-linux-x64",
+      "args": ["--env", "/path/to/.env"]
+    }
+  }
+}
+```
+
+Or use the `PLAUD_ENV_FILE` environment variable instead:
+
+```json
+{
+  "mcpServers": {
+    "plaud": {
+      "command": "/path/to/plaud-mcp-linux-x64",
+      "env": {
+        "PLAUD_ENV_FILE": "/path/to/.env"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Code for the MCP server to connect.
+
+### CLI Options
+
+| Flag | Description | Applies to |
+|------|-------------|------------|
+| `--env <path>` | Path to `.env` credentials file | login, server |
+| `--browser <path>` | Path to Chromium-based browser binary | login |
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `PLAUD_ENV_FILE` | Path to `.env` file with credentials (overridden by `--env`) | `.env` in current directory |
+| `CHROME_PATH` | Path to browser binary (overridden by `--browser`) | Auto-detected |
+
+---
+
+## Development
+
+### Setup
+
+```bash
+bun install
+```
+
+### Run the server
+
+```bash
+bun run start
+```
+
+### Configure Claude Code (dev mode)
+
+```json
+{
+  "mcpServers": {
+    "plaud": {
+      "command": "bun",
+      "args": ["run", "/path/to/plaud-mcp/src/index.ts"],
+      "env": {
+        "PLAUD_ENV_FILE": "/path/to/plaud-mcp/.env"
+      }
+    }
+  }
+}
+```
+
+### Run tests
+
+```bash
+bun test
+```
+
+Tests mock all HTTP requests and cover the API client, every tool handler, and MCP server integration.
+
+### Build binaries
+
+```bash
+bash build.sh
+```
+
+Produces cross-platform binaries in `dist/`.
+
+### Releasing
+
+Bump the version, push the tag, and CI handles the rest:
+
+```bash
+npm version patch    # or minor/major — bumps package.json and creates a v* git tag
+git push --follow-tags
+```
+
+This triggers the CI pipeline which runs tests, builds all 5 platform binaries, and creates a GitHub release with auto-generated release notes and the binaries attached.
+
+### Project Structure
+
+```
+src/
+├── index.ts              # MCP server entry point, tool registration
+├── client.ts             # Plaud API HTTP client with auth
+├── env.ts                # Shared .env path resolution (--env, PLAUD_ENV_FILE, cwd)
+├── login.ts              # Browser-based login flow (puppeteer-core)
+├── types.ts              # TypeScript interfaces for API responses
+└── tools/
+    ├── files.ts          # list_files, get_file, search_files, get_user
+    ├── content.ts        # get_transcript, get_summary
+    ├── mutations.ts      # rename, batch_rename, move_to_folder, trash
+    └── folders.ts        # list_folders
+test/
+├── setup.ts              # Test helpers and fetch mocks
+├── client.test.ts
+├── files.test.ts
+├── content.test.ts
+├── mutations.test.ts
+├── folders.test.ts
+└── server.test.ts
+```
+
+## License
+
+[MIT](LICENSE) — Charathram Ranganathan
