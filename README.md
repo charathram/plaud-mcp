@@ -54,6 +54,12 @@ Make the binary executable (Linux/macOS):
 chmod +x plaud-mcp-*
 ```
 
+**macOS users:** If you see a "damaged and can't be opened" error, remove the quarantine attribute:
+
+```bash
+xattr -d com.apple.quarantine plaud-mcp-darwin-*
+```
+
 ### 2. Login
 
 Run the login command using the binary:

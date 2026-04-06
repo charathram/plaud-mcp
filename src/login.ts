@@ -89,6 +89,7 @@ async function main() {
   });
 
   const page = (await browser.pages())[0] ?? (await browser.newPage());
+  await page.goto("https://web.plaud.ai");
 
   console.log("Waiting for you to log in at web.plaud.ai...");
 
