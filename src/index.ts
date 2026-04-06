@@ -16,9 +16,24 @@ Usage:
   plaud-mcp --version    Print version and exit
   plaud-mcp --help       Show this help message
 
-Login options:
-  --env <path>           Save credentials to a custom .env file path
-  --browser <path>       Use a specific browser binary for login`);
+Options:
+  --env <path>           Path to .env credentials file
+  --browser <path>       Use a specific browser binary for login
+
+MCP configuration (add to ~/.claude/settings.json):
+
+  {
+    "mcpServers": {
+      "plaud": {
+        "command": "/path/to/plaud-mcp",
+        "args": ["--env", "/path/to/.env"]
+      }
+    }
+  }
+
+Environment variables:
+  PLAUD_ENV_FILE         Path to .env credentials file
+  CHROME_PATH            Path to browser binary for login`);
   process.exit(0);
 }
 
