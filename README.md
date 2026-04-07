@@ -118,7 +118,13 @@ The server looks for credentials in this order:
 
 ### 4. Configure Claude Code
 
-Add to `~/.claude/settings.json`:
+The quickest way to register the server:
+
+```bash
+claude mcp add plaud -- /path/to/plaud-mcp --env /path/to/.env
+```
+
+Or manually add to `.mcp.json` in your project root (shared with team):
 
 ```json
 {
@@ -131,16 +137,14 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-Or use the `PLAUD_ENV_FILE` environment variable instead:
+Or add to `~/.claude.json` for personal access across all projects:
 
 ```json
 {
   "mcpServers": {
     "plaud": {
       "command": "/path/to/plaud-mcp",
-      "env": {
-        "PLAUD_ENV_FILE": "/path/to/.env"
-      }
+      "args": ["--env", "/path/to/.env"]
     }
   }
 }

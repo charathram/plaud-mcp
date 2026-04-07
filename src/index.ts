@@ -20,7 +20,10 @@ Options:
   --env <path>           Path to .env credentials file
   --browser <path>       Use a specific browser binary for login
 
-MCP configuration (add to ~/.claude/settings.json):
+Quick setup:
+  claude mcp add plaud -- /path/to/plaud-mcp --env /path/to/.env
+
+Or add to .mcp.json (project) or ~/.claude.json (global):
 
   {
     "mcpServers": {

@@ -1,13 +1,29 @@
 export interface PlaudFile {
   id: string;
-  file_name: string;
+  filename: string;
+  filesize: number;
+  filetype: string;
+  fullname: string;
+  file_md5: string;
+  ori_ready: boolean;
+  version: number;
+  version_ms: number;
+  edit_time: number;
+  edit_from: string;
+  is_trash: boolean;
+  start_time: number;
+  end_time: number;
   duration: number;
-  created_at: string;
-  updated_at: string;
-  file_tag_id?: string;
-  file_status?: number;
-  ai_status?: number;
-  trans_status?: number;
+  timezone: number;
+  zonemins: number;
+  scene: number;
+  filetag_id_list: string[];
+  serial_number: string;
+  is_trans: boolean;
+  is_summary: boolean;
+  is_markmemo: boolean;
+  wait_pull: number;
+  keywords: string[];
   [key: string]: unknown;
 }
 

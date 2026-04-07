@@ -12,6 +12,8 @@ describe("CLI flags", () => {
     expect(output).toContain("--help");
     expect(output).toContain("--env");
     expect(output).toContain("--browser");
+    expect(output).toContain("claude mcp add");
+    expect(output).toContain(".mcp.json");
     expect(output).toContain("mcpServers");
     expect(output).toContain("PLAUD_ENV_FILE");
     expect(output).toContain("CHROME_PATH");

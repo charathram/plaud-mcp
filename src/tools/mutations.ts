@@ -8,7 +8,7 @@ export async function renameFile(args: {
   const res = await plaudRequest<PlaudPatchResponse>(
     "PATCH",
     `/file/${args.file_id}`,
-    { file_name: args.new_name }
+    { filename: args.new_name }
   );
   return JSON.stringify({ success: res.code === 0, message: res.message });
 }

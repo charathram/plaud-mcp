@@ -4,9 +4,9 @@ import "./setup.js";
 import { listFiles, getFile, searchFiles, getUser } from "../src/tools/files.js";
 
 const MOCK_FILES = [
-  { id: "1", file_name: "Meeting Jan 5", duration: 3600, created_at: "2025-01-05T10:00:00Z", trans_status: 1 },
-  { id: "2", file_name: "Recording 1234", duration: 120, created_at: "2025-01-06T14:00:00Z", trans_status: 0 },
-  { id: "3", file_name: "Call with Bob", duration: 1800, created_at: "2025-01-07T09:00:00Z", trans_status: 1 },
+  { id: "1", filename: "Meeting Jan 5", duration: 3600000, start_time: 1736071200000, is_trans: true, is_summary: true },
+  { id: "2", filename: "Recording 1234", duration: 120000, start_time: 1736172000000, is_trans: false, is_summary: false },
+  { id: "3", filename: "Call with Bob", duration: 1800000, start_time: 1736240400000, is_trans: true, is_summary: true },
 ];
 
 describe("listFiles", () => {
@@ -39,7 +39,7 @@ describe("listFiles", () => {
 
     const result = JSON.parse(await listFiles({ min_duration_minutes: 10 }));
     expect(result.count).toBe(2);
-    // 120 seconds = 2 minutes, should be excluded
+    // 120000ms = 2 minutes, should be excluded
     expect(result.files.find((f: any) => f.id === "2")).toBeUndefined();
   });
 
@@ -62,12 +62,12 @@ describe("listFiles", () => {
 
 describe("getFile", () => {
   test("returns file detail", async () => {
-    const file = { id: "1", file_name: "Test", duration: 100, content_list: [] };
+    const file = { id: "1", filename: "Test", duration: 100000, content_list: [] };
     globalThis.fetch = mockFetchResponse({ code: 0, data_file: file }) as any;
 
     const result = JSON.parse(await getFile({ file_id: "1" }));
     expect(result.id).toBe("1");
-    expect(result.file_name).toBe("Test");
+    expect(result.filename).toBe("Test");
   });
 });
 
