@@ -73,11 +73,44 @@ async function main() {
     console.log("\nSkipping File Detail — could not fetch file list");
   }
 
+  // File detail for a transcribed file (to see content_list shape)
+  try {
+    const list = await plaudRequest<{ data_file_list: { id: string; is_trans: boolean }[] }>("GET", "/file/simple/web");
+    const transcribedFile = list.data_file_list?.find((f) => f.is_trans);
+    if (transcribedFile) {
+      await dumpEndpoint("File Detail (transcribed)", "GET", `/file/detail/${transcribedFile.id}`);
+    } else {
+      console.log("\nSkipping transcribed File Detail — no transcribed files in account");
+    }
+  } catch {
+    console.log("\nSkipping transcribed File Detail — could not fetch file list");
+  }
+
   // Folders
   await dumpEndpoint("Folder List", "GET", "/filetag/");
 
   // User profile
   await dumpEndpoint("User Profile", "GET", "/user/me");
+
+  // Transcription task status
+  await dumpEndpoint("Task Status", "GET", "/ai/file-task-status");
+
+  // Transcription status
+  await dumpEndpoint("Transcription Status", "GET", "/ai/trans-status");
+
+  // Note: POST /ai/transsumm/{file_id} is not called here to avoid triggering
+  // real transcription. The request body shape is:
+  // {
+  //   "is_reload": 0,
+  //   "summ_type": "AUTO-SELECT" | "<template_id>",
+  //   "summ_type_type": "system" | "community",
+  //   "info": "{\"language\":\"auto\",\"timezone\":-7,\"diarization\":1,\"llm\":\"auto\"}",
+  //   "support_mul_summ": true
+  // }
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("Generate (POST /ai/transsumm/{file_id}) — NOT CALLED (would trigger transcription)");
+  console.log("=".repeat(60));
+  console.log("See src/tools/mutations.ts generate() for request body shape.");
 }
 
 main().catch((err) => {

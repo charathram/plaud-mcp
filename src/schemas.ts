@@ -119,3 +119,10 @@ export const PlaudPatchResponseSchema = z.object({
 }).passthrough();
 
 export type PlaudPatchResponse = z.infer<typeof PlaudPatchResponseSchema>;
+
+export const PlaudGenerateResponseSchema = z.object({
+  status: z.number(),
+  msg: z.string(),
+}).passthrough();
+
+export type PlaudGenerateResponse = z.infer<typeof PlaudGenerateResponseSchema>;
