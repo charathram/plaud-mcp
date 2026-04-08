@@ -11,16 +11,16 @@ async function fetchContent(fileId: string, contentType: string): Promise<string
     PlaudFileDetailResponseSchema,
   );
 
-  const item = res.data?.content_list?.find((c) => c.type === contentType);
-  if (!item?.url) {
+  const item = res.data?.content_list?.find((c) => c.data_type === contentType);
+  if (!item?.data_link) {
     logger.warn(`No ${contentType} content found`, { fileId });
     return JSON.stringify({
       error: `No ${contentType} content found for file ${fileId}`,
     });
   }
 
-  logger.debug("Fetching content from S3", { contentType, url: item.url });
-  const textRes = await fetch(item.url);
+  logger.debug("Fetching content from S3", { contentType, url: item.data_link });
+  const textRes = await fetch(item.data_link);
   if (!textRes.ok) {
     throw new Error(`Failed to fetch ${contentType} from S3: ${textRes.status}`);
   }

@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { listFiles, getFile, searchFiles, getUser } from "./tools/files.js";
 import { getTranscript, getSummary } from "./tools/content.js";
-import { renameFile, batchRename, moveToFolder, trashFile } from "./tools/mutations.js";
+import { renameFile, batchRename, moveToFolder, trashFile, generate } from "./tools/mutations.js";
 import { listFolders } from "./tools/folders.js";
 import { logger, parseLogLevel, setLogLevel } from "./logger.js";
 import pkg from "../package.json";
@@ -166,6 +166,20 @@ server.tool(
     file_id: z.string().describe("The file ID"),
   },
   async (args) => ({ content: [{ type: "text", text: await trashFile(args) }] })
+);
+
+server.tool(
+  "plaud_generate",
+  "Generate transcript and summary for a file. Defaults to auto mode which picks the best settings. Use optional parameters for custom generation.",
+  {
+    file_id: z.string().describe("The file ID"),
+    language: z.string().optional().describe("Language code (e.g. 'en', 'zh', 'ja') or 'auto' for auto-detect (default: auto)"),
+    speaker_labeling: z.boolean().optional().describe("Enable speaker diarization (default: true)"),
+    llm: z.string().optional().describe("AI model to use, or 'auto' (default: auto)"),
+    template_id: z.string().optional().describe("Summary template ID (omit for auto-select)"),
+    template_type: z.string().optional().describe("Template type: 'system' or 'community' (default: system for auto, community for custom templates)"),
+  },
+  async (args) => ({ content: [{ type: "text", text: await generate(args) }] })
 );
 
 // Start server

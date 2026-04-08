@@ -1,6 +1,6 @@
 import { plaudRequest } from "../client.js";
 import { logger } from "../logger.js";
-import { PlaudPatchResponseSchema } from "../schemas.js";
+import { PlaudPatchResponseSchema, PlaudGenerateResponseSchema } from "../schemas.js";
 
 export async function renameFile(args: {
   file_id: string;
@@ -66,5 +66,40 @@ export async function trashFile(args: { file_id: string }): Promise<string> {
     { is_deleted: 1 },
     PlaudPatchResponseSchema,
   );
+  return JSON.stringify({ success: res.status === 0, message: res.msg });
+}
+
+export async function generate(args: {
+  file_id: string;
+  language?: string;
+  speaker_labeling?: boolean;
+  llm?: string;
+  template_id?: string;
+  template_type?: string;
+}): Promise<string> {
+  const language = args.language ?? "auto";
+  const diarization = args.speaker_labeling !== false ? 1 : 0;
+  const llm = args.llm ?? "auto";
+  const summType = args.template_id ?? "AUTO-SELECT";
+  const summTypeType = args.template_id ? (args.template_type ?? "community") : "system";
+
+  logger.debug("generate called", { file_id: args.file_id, language, diarization, llm, summType });
+
+  const body = {
+    is_reload: 0,
+    summ_type: summType,
+    summ_type_type: summTypeType,
+    info: JSON.stringify({ language, timezone: new Date().getTimezoneOffset() / -60, diarization, llm }),
+    support_mul_summ: true,
+  };
+
+  const res = await plaudRequest(
+    "POST",
+    `/ai/transsumm/${args.file_id}`,
+    body,
+    PlaudGenerateResponseSchema,
+  );
+
+  logger.info(`generate ${res.status === 0 ? "started" : "failed"}`, { file_id: args.file_id });
   return JSON.stringify({ success: res.status === 0, message: res.msg });
 }

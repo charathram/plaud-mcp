@@ -1,7 +1,7 @@
 import { describe, test, expect, mock } from "bun:test";
 import { mockFetchResponse } from "./setup.js";
 import "./setup.js";
-import { renameFile, batchRename, moveToFolder, trashFile } from "../src/tools/mutations.js";
+import { renameFile, batchRename, moveToFolder, trashFile, generate } from "../src/tools/mutations.js";
 
 describe("renameFile", () => {
   test("sends PATCH with new name", async () => {
@@ -68,5 +68,54 @@ describe("trashFile", () => {
 
     const body = JSON.parse((mockFetch.mock.calls[0] as [string, RequestInit])[1].body as string);
     expect(body).toEqual({ is_deleted: 1 });
+  });
+});
+
+describe("generate", () => {
+  test("sends POST with auto defaults", async () => {
+    const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
+    globalThis.fetch = mockFetch as any;
+
+    const result = JSON.parse(await generate({ file_id: "f1" }));
+    expect(result.success).toBe(true);
+
+    const [url, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.plaud.ai/ai/transsumm/f1");
+    expect(opts.method).toBe("POST");
+
+    const body = JSON.parse(opts.body as string);
+    expect(body.is_reload).toBe(0);
+    expect(body.summ_type).toBe("AUTO-SELECT");
+    expect(body.summ_type_type).toBe("system");
+    expect(body.support_mul_summ).toBe(true);
+
+    const info = JSON.parse(body.info);
+    expect(info.language).toBe("auto");
+    expect(info.diarization).toBe(1);
+    expect(info.llm).toBe("auto");
+  });
+
+  test("sends POST with custom options", async () => {
+    const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
+    globalThis.fetch = mockFetch as any;
+
+    const result = JSON.parse(await generate({
+      file_id: "f1",
+      language: "en",
+      speaker_labeling: false,
+      llm: "gpt-4",
+      template_id: "abc123",
+      template_type: "community",
+    }));
+    expect(result.success).toBe(true);
+
+    const body = JSON.parse((mockFetch.mock.calls[0] as [string, RequestInit])[1].body as string);
+    expect(body.summ_type).toBe("abc123");
+    expect(body.summ_type_type).toBe("community");
+
+    const info = JSON.parse(body.info);
+    expect(info.language).toBe("en");
+    expect(info.diarization).toBe(0);
+    expect(info.llm).toBe("gpt-4");
   });
 });

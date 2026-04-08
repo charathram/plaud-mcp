@@ -6,7 +6,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 
 ## Features
 
-- **11 MCP tools** covering the full Plaud API surface
+- **12 MCP tools** covering the full Plaud API surface
 - **Browser-based login** — no manual token extraction needed
 - **Cross-platform binaries** — single-file executables, no runtime dependencies
 - **Stdio transport** — works with any MCP-compatible client
@@ -25,6 +25,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 | `plaud_move_to_folder` | Move a file to a folder |
 | `plaud_list_folders` | List all folders/tags |
 | `plaud_trash_file` | Move a file to trash |
+| `plaud_generate` | Generate transcript and summary for a file (auto or custom options) |
 | `plaud_get_user` | Get current user profile |
 
 ---
