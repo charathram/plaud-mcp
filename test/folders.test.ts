@@ -6,9 +6,10 @@ import { listFolders } from "../src/tools/folders.js";
 describe("listFolders", () => {
   test("returns folders", async () => {
     globalThis.fetch = mockFetchResponse({
-      code: 0,
-      message: "ok",
-      data_tag_list: [
+      status: 0,
+      msg: "success",
+      data_filetag_total: 2,
+      data_filetag_list: [
         { id: "t1", tag_name: "Work" },
         { id: "t2", tag_name: "Personal" },
       ],
@@ -21,7 +22,7 @@ describe("listFolders", () => {
   });
 
   test("handles empty folder list", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_tag_list: [] }) as any;
+    globalThis.fetch = mockFetchResponse({ status: 0, msg: "success", data_filetag_total: 0, data_filetag_list: [] }) as any;
 
     const result = JSON.parse(await listFolders());
     expect(result.count).toBe(0);

@@ -3,6 +3,12 @@ import { z } from "zod";
 // Zod schemas for Plaud API responses.
 // These are the single source of truth for both runtime validation and TypeScript types.
 // Use .passthrough() so unknown fields from the API are preserved, not stripped.
+//
+// Verified against real API responses on 2026-04-08.
+// Run `bun run dump-api` to re-verify.
+
+// Common response envelope: all endpoints return status + msg (except /user/me which omits msg)
+// status=0 means success.
 
 export const PlaudFileSchema = z.object({
   id: z.string(),
@@ -35,8 +41,9 @@ export const PlaudFileSchema = z.object({
 export type PlaudFile = z.infer<typeof PlaudFileSchema>;
 
 export const PlaudFileListResponseSchema = z.object({
-  code: z.number(),
-  message: z.string(),
+  status: z.number(),
+  msg: z.string(),
+  data_file_total: z.number(),
   data_file_list: z.array(PlaudFileSchema),
 }).passthrough();
 
@@ -49,16 +56,30 @@ export const PlaudContentItemSchema = z.object({
 
 export type PlaudContentItem = z.infer<typeof PlaudContentItemSchema>;
 
-export const PlaudFileDetailSchema = PlaudFileSchema.extend({
+// File detail endpoint returns a different shape than the list endpoint.
+// The detail object uses file_id/file_name and has content_list.
+export const PlaudFileDetailDataSchema = z.object({
+  file_id: z.string(),
+  file_name: z.string(),
+  file_version: z.number(),
+  duration: z.number(),
+  is_trash: z.boolean(),
+  start_time: z.number(),
+  scene: z.number(),
+  serial_number: z.string(),
+  session_id: z.number(),
+  wait_pull: z.number(),
+  filetag_id_list: z.array(z.string()),
   content_list: z.array(PlaudContentItemSchema),
+  has_thought_partner: z.boolean(),
 }).passthrough();
 
-export type PlaudFileDetail = z.infer<typeof PlaudFileDetailSchema>;
+export type PlaudFileDetailData = z.infer<typeof PlaudFileDetailDataSchema>;
 
 export const PlaudFileDetailResponseSchema = z.object({
-  code: z.number(),
-  message: z.string(),
-  data_file: PlaudFileDetailSchema,
+  status: z.number(),
+  msg: z.string(),
+  data: PlaudFileDetailDataSchema,
 }).passthrough();
 
 export type PlaudFileDetailResponse = z.infer<typeof PlaudFileDetailResponseSchema>;
@@ -71,24 +92,24 @@ export const PlaudFolderSchema = z.object({
 export type PlaudFolder = z.infer<typeof PlaudFolderSchema>;
 
 export const PlaudFolderListResponseSchema = z.object({
-  code: z.number(),
-  message: z.string(),
-  data_tag_list: z.array(PlaudFolderSchema),
+  status: z.number(),
+  msg: z.string(),
+  data_filetag_total: z.number(),
+  data_filetag_list: z.array(PlaudFolderSchema),
 }).passthrough();
 
 export type PlaudFolderListResponse = z.infer<typeof PlaudFolderListResponseSchema>;
 
 export const PlaudUserResponseSchema = z.object({
-  code: z.number(),
-  message: z.string(),
+  status: z.number(),
   data_user: z.record(z.string(), z.unknown()),
 }).passthrough();
 
 export type PlaudUserResponse = z.infer<typeof PlaudUserResponseSchema>;
 
 export const PlaudPatchResponseSchema = z.object({
-  code: z.number(),
-  message: z.string(),
+  status: z.number(),
+  msg: z.string(),
 }).passthrough();
 
 export type PlaudPatchResponse = z.infer<typeof PlaudPatchResponseSchema>;

@@ -45,7 +45,7 @@ export async function getFile(args: { file_id: string }): Promise<string> {
     undefined,
     PlaudFileDetailResponseSchema,
   );
-  return JSON.stringify(res.data_file, null, 2);
+  return JSON.stringify(res.data, null, 2);
 }
 
 export async function searchFiles(args: {
