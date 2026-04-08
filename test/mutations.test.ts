@@ -14,7 +14,7 @@ describe("renameFile", () => {
     const [url, opts] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("https://api.plaud.ai/file/f1");
     expect(opts.method).toBe("PATCH");
-    expect(JSON.parse(opts.body as string)).toEqual({ file_name: "New Name" });
+    expect(JSON.parse(opts.body as string)).toEqual({ filename: "New Name" });
   });
 
   test("reports failure when code != 0", async () => {

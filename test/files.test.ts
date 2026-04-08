@@ -4,14 +4,14 @@ import "./setup.js";
 import { listFiles, getFile, searchFiles, getUser } from "../src/tools/files.js";
 
 const MOCK_FILES = [
-  { id: "1", file_name: "Meeting Jan 5", duration: 3600, created_at: "2025-01-05T10:00:00Z", trans_status: 1 },
-  { id: "2", file_name: "Recording 1234", duration: 120, created_at: "2025-01-06T14:00:00Z", trans_status: 0 },
-  { id: "3", file_name: "Call with Bob", duration: 1800, created_at: "2025-01-07T09:00:00Z", trans_status: 1 },
+  { id: "1", filename: "Meeting Jan 5", filesize: 1000, filetype: "wav", fullname: "", file_md5: "", ori_ready: true, version: 1, version_ms: 0, edit_time: 0, edit_from: "web", is_trash: false, start_time: 1736071200000, end_time: 1736074800000, duration: 3600000, timezone: -8, zonemins: -480, scene: 0, filetag_id_list: [], serial_number: "", is_trans: true, is_summary: true, is_markmemo: false, wait_pull: 0, keywords: [] },
+  { id: "2", filename: "Recording 1234", filesize: 500, filetype: "wav", fullname: "", file_md5: "", ori_ready: true, version: 1, version_ms: 0, edit_time: 0, edit_from: "web", is_trash: false, start_time: 1736172000000, end_time: 1736172120000, duration: 120000, timezone: -8, zonemins: -480, scene: 0, filetag_id_list: [], serial_number: "", is_trans: false, is_summary: false, is_markmemo: false, wait_pull: 0, keywords: [] },
+  { id: "3", filename: "Call with Bob", filesize: 800, filetype: "wav", fullname: "", file_md5: "", ori_ready: true, version: 1, version_ms: 0, edit_time: 0, edit_from: "web", is_trash: false, start_time: 1736240400000, end_time: 1736242200000, duration: 1800000, timezone: -8, zonemins: -480, scene: 0, filetag_id_list: [], serial_number: "", is_trans: true, is_summary: true, is_markmemo: false, wait_pull: 0, keywords: [] },
 ];
 
 describe("listFiles", () => {
   test("returns all files with no filter", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await listFiles({}));
     expect(result.count).toBe(3);
@@ -19,7 +19,7 @@ describe("listFiles", () => {
   });
 
   test("filters transcribed files", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await listFiles({ filter: "transcribed" }));
     expect(result.count).toBe(2);
@@ -27,7 +27,7 @@ describe("listFiles", () => {
   });
 
   test("filters untranscribed files", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await listFiles({ filter: "untranscribed" }));
     expect(result.count).toBe(1);
@@ -35,16 +35,16 @@ describe("listFiles", () => {
   });
 
   test("filters by minimum duration", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await listFiles({ min_duration_minutes: 10 }));
     expect(result.count).toBe(2);
-    // 120 seconds = 2 minutes, should be excluded
+    // 120000ms = 2 minutes, should be excluded
     expect(result.files.find((f: any) => f.id === "2")).toBeUndefined();
   });
 
   test("combines filter and min_duration", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await listFiles({ filter: "transcribed", min_duration_minutes: 45 }));
     expect(result.count).toBe(1);
@@ -52,7 +52,7 @@ describe("listFiles", () => {
   });
 
   test("handles empty file list", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: [] }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: [] }) as any;
 
     const result = JSON.parse(await listFiles({}));
     expect(result.count).toBe(0);
@@ -62,18 +62,18 @@ describe("listFiles", () => {
 
 describe("getFile", () => {
   test("returns file detail", async () => {
-    const file = { id: "1", file_name: "Test", duration: 100, content_list: [] };
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file: file }) as any;
+    const file = { id: "1", filename: "Test", filesize: 100, filetype: "wav", fullname: "", file_md5: "", ori_ready: true, version: 1, version_ms: 0, edit_time: 0, edit_from: "web", is_trash: false, start_time: 1736071200000, end_time: 1736071300000, duration: 100000, timezone: -8, zonemins: -480, scene: 0, filetag_id_list: [], serial_number: "", is_trans: false, is_summary: false, is_markmemo: false, wait_pull: 0, keywords: [], content_list: [] };
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file: file }) as any;
 
     const result = JSON.parse(await getFile({ file_id: "1" }));
     expect(result.id).toBe("1");
-    expect(result.file_name).toBe("Test");
+    expect(result.filename).toBe("Test");
   });
 });
 
 describe("searchFiles", () => {
   test("searches by keyword", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await searchFiles({ query: "meeting" }));
     expect(result.count).toBe(1);
@@ -81,7 +81,7 @@ describe("searchFiles", () => {
   });
 
   test("searches by date range", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await searchFiles({
       start_date: "2025-01-06T00:00:00Z",
@@ -92,7 +92,7 @@ describe("searchFiles", () => {
   });
 
   test("combines query and date range", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_file_list: MOCK_FILES }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_file_list: MOCK_FILES }) as any;
 
     const result = JSON.parse(await searchFiles({
       query: "call",
@@ -105,7 +105,7 @@ describe("searchFiles", () => {
 
 describe("getUser", () => {
   test("returns user data", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_user: { id: "u1", nickname: "test" } }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_user: { id: "u1", nickname: "test" } }) as any;
 
     const result = JSON.parse(await getUser());
     expect(result.nickname).toBe("test");

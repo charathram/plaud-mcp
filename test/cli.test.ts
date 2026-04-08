@@ -12,9 +12,13 @@ describe("CLI flags", () => {
     expect(output).toContain("--help");
     expect(output).toContain("--env");
     expect(output).toContain("--browser");
+    expect(output).toContain("--log-level");
+    expect(output).toContain("claude mcp add");
+    expect(output).toContain(".mcp.json");
     expect(output).toContain("mcpServers");
     expect(output).toContain("PLAUD_ENV_FILE");
     expect(output).toContain("CHROME_PATH");
+    expect(output).toContain("PLAUD_LOG_LEVEL");
   });
 
   test("-h prints the same as --help", async () => {

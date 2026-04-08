@@ -1,19 +1,25 @@
 import { plaudRequest } from "../client.js";
-import type { PlaudFileDetailResponse } from "../types.js";
+import { logger } from "../logger.js";
+import { PlaudFileDetailResponseSchema } from "../schemas.js";
 
 async function fetchContent(fileId: string, contentType: string): Promise<string> {
-  const res = await plaudRequest<PlaudFileDetailResponse>(
+  logger.debug("fetchContent called", { fileId, contentType });
+  const res = await plaudRequest(
     "GET",
-    `/file/detail/${fileId}`
+    `/file/detail/${fileId}`,
+    undefined,
+    PlaudFileDetailResponseSchema,
   );
 
   const item = res.data_file?.content_list?.find((c) => c.type === contentType);
   if (!item?.url) {
+    logger.warn(`No ${contentType} content found`, { fileId });
     return JSON.stringify({
       error: `No ${contentType} content found for file ${fileId}`,
     });
   }
 
+  logger.debug("Fetching content from S3", { contentType, url: item.url });
   const textRes = await fetch(item.url);
   if (!textRes.ok) {
     throw new Error(`Failed to fetch ${contentType} from S3: ${textRes.status}`);
