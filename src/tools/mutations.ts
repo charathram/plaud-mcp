@@ -13,8 +13,8 @@ export async function renameFile(args: {
     { filename: args.new_name },
     PlaudPatchResponseSchema,
   );
-  logger.info(`renameFile ${res.code === 0 ? "succeeded" : "failed"}`, { file_id: args.file_id });
-  return JSON.stringify({ success: res.code === 0, message: res.message });
+  logger.info(`renameFile ${res.status === 0 ? "succeeded" : "failed"}`, { file_id: args.file_id });
+  return JSON.stringify({ success: res.status === 0, message: res.msg });
 }
 
 export async function batchRename(args: {
@@ -33,7 +33,7 @@ export async function batchRename(args: {
     results.push({
       file_id: item.file_id,
       new_name: item.new_name,
-      success: res.code === 0,
+      success: res.status === 0,
     });
     // Rate limit between requests
     await Bun.sleep(500);
@@ -55,7 +55,7 @@ export async function moveToFolder(args: {
     { file_tag_id: args.folder_id },
     PlaudPatchResponseSchema,
   );
-  return JSON.stringify({ success: res.code === 0, message: res.message });
+  return JSON.stringify({ success: res.status === 0, message: res.msg });
 }
 
 export async function trashFile(args: { file_id: string }): Promise<string> {
@@ -66,5 +66,5 @@ export async function trashFile(args: { file_id: string }): Promise<string> {
     { is_deleted: 1 },
     PlaudPatchResponseSchema,
   );
-  return JSON.stringify({ success: res.code === 0, message: res.message });
+  return JSON.stringify({ success: res.status === 0, message: res.msg });
 }

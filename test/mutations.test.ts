@@ -5,7 +5,7 @@ import { renameFile, batchRename, moveToFolder, trashFile } from "../src/tools/m
 
 describe("renameFile", () => {
   test("sends PATCH with new name", async () => {
-    const mockFetch = mockFetchResponse({ code: 0, message: "ok" });
+    const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
     globalThis.fetch = mockFetch as any;
 
     const result = JSON.parse(await renameFile({ file_id: "f1", new_name: "New Name" }));
@@ -17,8 +17,8 @@ describe("renameFile", () => {
     expect(JSON.parse(opts.body as string)).toEqual({ filename: "New Name" });
   });
 
-  test("reports failure when code != 0", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 1, message: "error" }) as any;
+  test("reports failure when status != 0", async () => {
+    globalThis.fetch = mockFetchResponse({ status: 1, msg: "error" }) as any;
 
     const result = JSON.parse(await renameFile({ file_id: "f1", new_name: "X" }));
     expect(result.success).toBe(false);
@@ -27,7 +27,7 @@ describe("renameFile", () => {
 
 describe("batchRename", () => {
   test("renames multiple files sequentially", async () => {
-    const mockFetch = mockFetchResponse({ code: 0, message: "ok" });
+    const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
     globalThis.fetch = mockFetch as any;
 
     const renames = [
@@ -47,7 +47,7 @@ describe("batchRename", () => {
 
 describe("moveToFolder", () => {
   test("sends PATCH with folder id", async () => {
-    const mockFetch = mockFetchResponse({ code: 0, message: "ok" });
+    const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
     globalThis.fetch = mockFetch as any;
 
     const result = JSON.parse(await moveToFolder({ file_id: "f1", folder_id: "folder1" }));
@@ -60,7 +60,7 @@ describe("moveToFolder", () => {
 
 describe("trashFile", () => {
   test("sends PATCH with is_deleted", async () => {
-    const mockFetch = mockFetchResponse({ code: 0, message: "ok" });
+    const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
     globalThis.fetch = mockFetch as any;
 
     const result = JSON.parse(await trashFile({ file_id: "f1" }));

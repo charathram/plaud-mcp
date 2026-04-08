@@ -11,7 +11,7 @@ async function fetchContent(fileId: string, contentType: string): Promise<string
     PlaudFileDetailResponseSchema,
   );
 
-  const item = res.data_file?.content_list?.find((c) => c.type === contentType);
+  const item = res.data?.content_list?.find((c) => c.type === contentType);
   if (!item?.url) {
     logger.warn(`No ${contentType} content found`, { fileId });
     return JSON.stringify({
