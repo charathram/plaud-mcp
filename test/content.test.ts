@@ -20,9 +20,9 @@ const FILE_DETAIL = {
     filetag_id_list: [],
     has_thought_partner: false,
     content_list: [
-      { type: "transaction", url: "https://s3.example.com/raw-transcript" },
-      { type: "transaction_polish", url: "https://s3.example.com/polished-transcript" },
-      { type: "auto_sum_note", url: "https://s3.example.com/summary" },
+      { data_id: "src_trans:1:f1", data_type: "transaction", task_status: 1, err_code: "", err_msg: "", data_title: "", data_tab_name: "", data_link: "https://s3.example.com/raw-transcript" },
+      { data_id: "src_polish:1:f1", data_type: "transaction_polish", task_status: 1, err_code: "", err_msg: "", data_title: "", data_tab_name: "", data_link: "https://s3.example.com/polished-transcript" },
+      { data_id: "auto_sum:1:f1", data_type: "auto_sum_note", task_status: 1, err_code: "", err_msg: "", data_title: "Summary", data_tab_name: "Summary", data_link: "https://s3.example.com/summary" },
     ],
   },
 };

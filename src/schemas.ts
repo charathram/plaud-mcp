@@ -50,8 +50,14 @@ export const PlaudFileListResponseSchema = z.object({
 export type PlaudFileListResponse = z.infer<typeof PlaudFileListResponseSchema>;
 
 export const PlaudContentItemSchema = z.object({
-  type: z.string(),
-  url: z.string(),
+  data_id: z.string(),
+  data_type: z.string(),
+  task_status: z.number(),
+  err_code: z.string(),
+  err_msg: z.string(),
+  data_title: z.string(),
+  data_tab_name: z.string(),
+  data_link: z.string(),
 }).passthrough();
 
 export type PlaudContentItem = z.infer<typeof PlaudContentItemSchema>;
