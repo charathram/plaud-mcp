@@ -1,11 +1,14 @@
 import { plaudRequest } from "../client.js";
-import type { PlaudFolderListResponse } from "../types.js";
+import { logger } from "../logger.js";
+import { PlaudFolderListResponseSchema } from "../schemas.js";
 
 export async function listFolders(): Promise<string> {
-  const res = await plaudRequest<PlaudFolderListResponse>("GET", "/filetag/");
+  logger.debug("listFolders called");
+  const res = await plaudRequest("GET", "/filetag/", undefined, PlaudFolderListResponseSchema);
   const folders = (res.data_tag_list ?? []).map((f) => ({
     id: f.id,
     name: f.tag_name,
   }));
+  logger.info(`listFolders returning ${folders.length} folders`);
   return JSON.stringify({ count: folders.length, folders }, null, 2);
 }

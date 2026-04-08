@@ -12,7 +12,9 @@
   },
   "scripts": {
     "login": "bun run src/login.ts",
-    "start": "bun run src/index.ts"
+    "start": "bun run src/index.ts",
+    "inspect": "bunx @modelcontextprotocol/inspector bun src/index.ts",
+    "dump-api": "bun scripts/dump-api.ts"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

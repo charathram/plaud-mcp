@@ -7,6 +7,7 @@ describe("listFolders", () => {
   test("returns folders", async () => {
     globalThis.fetch = mockFetchResponse({
       code: 0,
+      message: "ok",
       data_tag_list: [
         { id: "t1", tag_name: "Work" },
         { id: "t2", tag_name: "Personal" },
@@ -20,7 +21,7 @@ describe("listFolders", () => {
   });
 
   test("handles empty folder list", async () => {
-    globalThis.fetch = mockFetchResponse({ code: 0, data_tag_list: [] }) as any;
+    globalThis.fetch = mockFetchResponse({ code: 0, message: "ok", data_tag_list: [] }) as any;
 
     const result = JSON.parse(await listFolders());
     expect(result.count).toBe(0);

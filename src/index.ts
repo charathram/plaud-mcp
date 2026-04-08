@@ -5,6 +5,7 @@ import { listFiles, getFile, searchFiles, getUser } from "./tools/files.js";
 import { getTranscript, getSummary } from "./tools/content.js";
 import { renameFile, batchRename, moveToFolder, trashFile } from "./tools/mutations.js";
 import { listFolders } from "./tools/folders.js";
+import { logger, parseLogLevel, setLogLevel } from "./logger.js";
 import pkg from "../package.json";
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
@@ -19,8 +20,12 @@ Usage:
 Options:
   --env <path>           Path to .env credentials file
   --browser <path>       Use a specific browser binary for login
+  --log-level <level>    Set log verbosity: debug, info, warn, error (default: info)
 
-MCP configuration (add to ~/.claude/settings.json):
+Quick setup:
+  claude mcp add plaud -- /path/to/plaud-mcp --env /path/to/.env
+
+Or add to .mcp.json (project) or ~/.claude.json (global):
 
   {
     "mcpServers": {
@@ -33,7 +38,8 @@ MCP configuration (add to ~/.claude/settings.json):
 
 Environment variables:
   PLAUD_ENV_FILE         Path to .env credentials file
-  CHROME_PATH            Path to browser binary for login`);
+  CHROME_PATH            Path to browser binary for login
+  PLAUD_LOG_LEVEL        Log verbosity (debug, info, warn, error)`);
   process.exit(0);
 }
 
@@ -47,6 +53,8 @@ if (process.argv.includes("--login")) {
   await login.default;
   process.exit(0);
 }
+
+setLogLevel(parseLogLevel());
 
 const server = new McpServer({
   name: "plaud",
@@ -162,8 +170,10 @@ server.tool(
 
 // Start server
 async function main() {
+  logger.info(`plaud-mcp v${pkg.version} starting`, { logLevel: parseLogLevel() });
   const transport = new StdioServerTransport();
   await server.connect(transport);
+  logger.info("MCP server connected via stdio");
 }
 
 main().catch((err) => {

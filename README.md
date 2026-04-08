@@ -118,7 +118,13 @@ The server looks for credentials in this order:
 
 ### 4. Configure Claude Code
 
-Add to `~/.claude/settings.json`:
+Quickest:
+
+```bash
+claude mcp add plaud -- /path/to/plaud-mcp --env /path/to/.env
+```
+
+Or add to `.mcp.json` in your project root (shared with team):
 
 ```json
 {
@@ -131,7 +137,7 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-Or use the `PLAUD_ENV_FILE` environment variable instead:
+Or add to `~/.claude.json` for personal access across all projects:
 
 ```json
 {
@@ -154,6 +160,7 @@ Restart Claude Code for the MCP server to connect.
 |------|-------------|------------|
 | `--env <path>` | Path to `.env` credentials file | login, server |
 | `--browser <path>` | Path to Chromium-based browser binary | login |
+| `--log-level <level>` | Set log verbosity: `debug`, `info`, `warn`, `error` (default: `info`) | server |
 
 ### Environment Variables
 
@@ -161,6 +168,7 @@ Restart Claude Code for the MCP server to connect.
 |----------|-------------|---------|
 | `PLAUD_ENV_FILE` | Path to `.env` file with credentials (overridden by `--env`) | `.env` in current directory |
 | `CHROME_PATH` | Path to browser binary (overridden by `--browser`) | Auto-detected |
+| `PLAUD_LOG_LEVEL` | Log verbosity (overridden by `--log-level`) | `info` |
 
 ---
 
@@ -226,15 +234,18 @@ This triggers the CI pipeline which runs tests, builds all 5 platform binaries, 
 ```
 src/
 ├── index.ts              # MCP server entry point, tool registration
-├── client.ts             # Plaud API HTTP client with auth
+├── client.ts             # Plaud API HTTP client with auth and Zod validation
 ├── env.ts                # Shared .env path resolution (--env, PLAUD_ENV_FILE, cwd)
+├── logger.ts             # Colored logging with configurable levels
 ├── login.ts              # Browser-based login flow (puppeteer-core)
-├── types.ts              # TypeScript interfaces for API responses
+├── schemas.ts            # Zod schemas for API responses (runtime validation + types)
 └── tools/
     ├── files.ts          # list_files, get_file, search_files, get_user
     ├── content.ts        # get_transcript, get_summary
     ├── mutations.ts      # rename, batch_rename, move_to_folder, trash
     └── folders.ts        # list_folders
+scripts/
+└── dump-api.ts           # Dump raw API responses for schema discovery
 test/
 ├── setup.ts              # Test helpers and fetch mocks
 ├── client.test.ts

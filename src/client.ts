@@ -1,4 +1,6 @@
 import { resolveEnvPath } from "./env.js";
+import { logger } from "./logger.js";
+import type { z } from "zod";
 
 const BASE_URL = "https://api.plaud.ai";
 
@@ -40,13 +42,15 @@ async function loadEnv(): Promise<EnvConfig> {
     throw new Error("PLAUD_AUTH_TOKEN is missing from .env file");
   }
 
+  logger.debug("Loaded credentials", { envPath });
   return cachedConfig;
 }
 
 export async function plaudRequest<T = unknown>(
   method: string,
   path: string,
-  body?: unknown
+  body?: unknown,
+  schema?: z.ZodType<T>,
 ): Promise<T> {
   const config = await loadEnv();
 
@@ -65,6 +69,8 @@ export async function plaudRequest<T = unknown>(
     headers["Content-Type"] = "application/json";
   }
 
+  logger.info(`${method} ${path}`, body !== undefined ? { body: JSON.stringify(body) } : undefined);
+
   const res = await fetch(`${BASE_URL}${path}`, {
     method,
     headers,
@@ -72,6 +78,7 @@ export async function plaudRequest<T = unknown>(
   });
 
   if (res.status === 401) {
+    logger.error("Auth token expired", { path });
     throw new Error(
       "Plaud API returned 401 — token expired. Re-extract JWT from browser at web.plaud.ai."
     );
@@ -79,8 +86,24 @@ export async function plaudRequest<T = unknown>(
 
   if (!res.ok) {
     const text = await res.text();
+    logger.error(`API request failed`, { method, path, status: res.status, response: text });
     throw new Error(`Plaud API ${method} ${path} failed (${res.status}): ${text}`);
   }
 
-  return res.json() as Promise<T>;
+  logger.debug(`${method} ${path} responded`, { status: res.status });
+
+  const json = await res.json();
+  if (schema) {
+    try {
+      return schema.parse(json);
+    } catch (err) {
+      logger.error("Response validation failed — API schema mismatch", {
+        method,
+        path,
+        error: String(err),
+      });
+      throw err;
+    }
+  }
+  return json as T;
 }
