@@ -6,7 +6,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 
 ## Features
 
-- **12 MCP tools** covering the full Plaud API surface
+- **13 MCP tools** covering the full Plaud API surface
 - **Browser-based login** — no manual token extraction needed
 - **Cross-platform binaries** — single-file executables, no runtime dependencies
 - **Stdio transport** — works with any MCP-compatible client
@@ -20,6 +20,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 | `plaud_search_files` | Search recordings by keyword or date range |
 | `plaud_get_transcript` | Fetch raw or polished transcript text |
 | `plaud_get_summary` | Fetch AI-generated summary |
+| `plaud_export_transcript` | Export transcript as formatted TXT or SRT with optional timestamps/speakers |
 | `plaud_rename_file` | Rename a single file |
 | `plaud_batch_rename` | Rename multiple files at once (rate-limited) |
 | `plaud_move_to_folder` | Move a file to a folder |
