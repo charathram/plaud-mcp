@@ -3,7 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { listFiles, getFile, searchFiles, getUser } from "./tools/files.js";
 import { getTranscript, getSummary, exportTranscript } from "./tools/content.js";
-import { renameFile, batchRename, moveToFolder, trashFile, generate } from "./tools/mutations.js";
+import { renameFile, batchRename, moveToFolder, trashFile, generate, nameSpeakers } from "./tools/mutations.js";
 import { listFolders } from "./tools/folders.js";
 import { logger, parseLogLevel, setLogLevel } from "./logger.js";
 import pkg from "../package.json";
@@ -216,6 +216,19 @@ server.tool(
     template_type: z.string().optional().describe("Template type: 'system' or 'community' (default: system for auto, community for custom templates)"),
   },
   async (args) => ({ content: [{ type: "text", text: await generate(args) }] })
+);
+
+server.tool(
+  "plaud_name_speakers",
+  "Rename speakers in a transcript. Replaces all occurrences of a speaker name across all segments. Requires the file to have been transcribed first.",
+  {
+    file_id: z.string().describe("The file ID"),
+    renames: z.array(z.object({
+      old_name: z.string().describe("Current speaker name (e.g. 'Speaker 2')"),
+      new_name: z.string().describe("New speaker name (e.g. 'Alice')"),
+    })).describe("Array of {old_name, new_name} pairs to rename"),
+  },
+  async (args) => ({ content: [{ type: "text", text: await nameSpeakers(args) }] })
 );
 
 // Start server

@@ -27,6 +27,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 | `plaud_list_folders` | List all folders/tags |
 | `plaud_trash_file` | Move a file to trash |
 | `plaud_generate` | Generate transcript and summary for a file (auto or custom options) |
+| `plaud_name_speakers` | Rename speakers in a transcript (e.g. "Speaker 2" to "Alice") |
 | `plaud_get_user` | Get current user profile |
 
 ---
