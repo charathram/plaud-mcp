@@ -75,4 +75,47 @@ describe("MCP server integration", () => {
     const registrations = source.match(/server\.tool\(/g);
     expect(registrations?.length).toBe(12);
   });
+
+  test("initialize response includes instructions with tool summary", async () => {
+    const server = new McpServer(
+      { name: "test-plaud", version: "0.0.1" },
+      { instructions: "Plaud MCP server — test instructions" },
+    );
+
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    await server.connect(serverTransport);
+
+    const client = new Client({ name: "test-client", version: "0.0.1" });
+    await client.connect(clientTransport);
+
+    expect(client.getServerVersion()).toMatchObject({ name: "test-plaud" });
+    expect(client.getInstructions()).toBe("Plaud MCP server — test instructions");
+
+    await client.close();
+    await server.close();
+  });
+
+  test("server instructions list all tools", async () => {
+    const source = await Bun.file("src/index.ts").text();
+    // Extract the instructions string from source
+    const expectedTools = [
+      "plaud_list_files",
+      "plaud_get_file",
+      "plaud_search_files",
+      "plaud_get_user",
+      "plaud_get_transcript",
+      "plaud_get_summary",
+      "plaud_generate",
+      "plaud_rename_file",
+      "plaud_batch_rename",
+      "plaud_move_to_folder",
+      "plaud_list_folders",
+      "plaud_trash_file",
+    ];
+
+    // Verify each tool is mentioned in the instructions block
+    for (const tool of expectedTools) {
+      expect(source).toContain(`"- ${tool}:`);
+    }
+  });
 });

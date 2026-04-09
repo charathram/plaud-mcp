@@ -56,10 +56,34 @@ if (process.argv.includes("--login")) {
 
 setLogLevel(parseLogLevel());
 
-const server = new McpServer({
-  name: "plaud",
-  version: pkg.version,
-});
+const server = new McpServer(
+  {
+    name: "plaud",
+    version: pkg.version,
+  },
+  {
+    instructions: [
+      "Plaud MCP server — access Plaud.ai audio recordings, transcripts, and summaries.",
+      "",
+      "Available tools:",
+      "- plaud_list_files: List recordings, filter by transcription status or duration",
+      "- plaud_get_file: Get detailed metadata for a specific file",
+      "- plaud_search_files: Search recordings by keyword or date range",
+      "- plaud_get_user: Get current user profile",
+      "- plaud_get_transcript: Fetch raw or polished transcript text",
+      "- plaud_get_summary: Fetch AI-generated summary",
+      "- plaud_generate: Generate transcript and summary (auto or custom options)",
+      "- plaud_rename_file: Rename a single file",
+      "- plaud_batch_rename: Rename multiple files at once",
+      "- plaud_move_to_folder: Move a file to a folder",
+      "- plaud_list_folders: List all folders/tags",
+      "- plaud_trash_file: Move a file to trash",
+      "",
+      "Typical workflow: list files → get transcript → get summary.",
+      "Use plaud_generate to transcribe files that haven't been processed yet.",
+    ].join("\n"),
+  },
+);
 
 // File tools
 server.tool(
