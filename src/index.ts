@@ -2,7 +2,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
 import { listFiles, getFile, searchFiles, getUser } from "./tools/files.js";
-import { getTranscript, getSummary } from "./tools/content.js";
+import { getTranscript, getSummary, exportTranscript } from "./tools/content.js";
 import { renameFile, batchRename, moveToFolder, trashFile, generate } from "./tools/mutations.js";
 import { listFolders } from "./tools/folders.js";
 import { logger, parseLogLevel, setLogLevel } from "./logger.js";
@@ -141,6 +141,18 @@ server.tool(
     file_id: z.string().describe("The file ID"),
   },
   async (args) => ({ content: [{ type: "text", text: await getSummary(args) }] })
+);
+
+server.tool(
+  "plaud_export_transcript",
+  "Export a transcript as formatted text. Supports TXT and SRT formats with optional timestamps and speaker labels.",
+  {
+    file_id: z.string().describe("The file ID"),
+    format: z.enum(["txt", "srt"]).optional().describe("Export format: txt or srt (default: txt)"),
+    include_timestamps: z.boolean().optional().describe("Include timestamps (default: true)"),
+    include_speakers: z.boolean().optional().describe("Include speaker labels (default: true)"),
+  },
+  async (args) => ({ content: [{ type: "text", text: await exportTranscript(args) }] })
 );
 
 // Mutation tools

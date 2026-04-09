@@ -111,6 +111,39 @@ async function main() {
   console.log("Generate (POST /ai/transsumm/{file_id}) — NOT CALLED (would trigger transcription)");
   console.log("=".repeat(60));
   console.log("See src/tools/mutations.ts generate() for request body shape.");
+
+  // Export transcript — client-side only, no API endpoint
+  console.log(`\n${"=".repeat(60)}`);
+  console.log("Export Transcript — CLIENT-SIDE (no API endpoint)");
+  console.log("=".repeat(60));
+  console.log("The web UI exports transcripts by fetching the transcript segments");
+  console.log("from S3 (via content_list data_link) and formatting them locally.");
+  console.log("Supported formats: TXT, SRT, DOCX, PDF");
+  console.log("Options: include_timestamps, include_speakers");
+  console.log("See src/tools/content.ts exportTranscript() for implementation.");
+
+  // Dump a sample transcript segment shape from a transcribed file
+  try {
+    const list = await plaudRequest<{ data_file_list: { id: string; is_trans: boolean }[] }>("GET", "/file/simple/web");
+    const transcribedFile = list.data_file_list?.find((f) => f.is_trans);
+    if (transcribedFile) {
+      const detail = await plaudRequest<{ data: { content_list: { data_type: string; data_link: string }[] } }>("GET", `/file/detail/${transcribedFile.id}`);
+      const polished = detail.data?.content_list?.find((c) => c.data_type === "transaction_polish");
+      const raw = detail.data?.content_list?.find((c) => c.data_type === "transaction");
+      const source = polished ?? raw;
+      if (source?.data_link) {
+        const segRes = await fetch(source.data_link);
+        if (segRes.ok) {
+          const segments = await segRes.json() as unknown[];
+          console.log(`\n--- Transcript Segment Shape (from ${source.data_type}) ---`);
+          console.log(JSON.stringify(segments[0], null, 2));
+          console.log(`  (${segments.length} segments total)`);
+        }
+      }
+    }
+  } catch {
+    console.log("  Could not fetch transcript segments for shape inspection");
+  }
 }
 
 main().catch((err) => {
