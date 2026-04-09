@@ -64,6 +64,7 @@ describe("MCP server integration", () => {
       "plaud_trash_file",
       "plaud_generate",
       "plaud_export_transcript",
+      "plaud_name_speakers",
     ];
 
     // We verify count by reading the source file
@@ -74,7 +75,7 @@ describe("MCP server integration", () => {
 
     // Count server.tool( registrations
     const registrations = source.match(/server\.tool\(/g);
-    expect(registrations?.length).toBe(13);
+    expect(registrations?.length).toBe(14);
   });
 
   test("initialize response includes instructions with tool summary", async () => {

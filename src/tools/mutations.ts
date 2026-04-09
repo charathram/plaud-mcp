@@ -1,6 +1,6 @@
 import { plaudRequest } from "../client.js";
 import { logger } from "../logger.js";
-import { PlaudPatchResponseSchema, PlaudGenerateResponseSchema } from "../schemas.js";
+import { PlaudPatchResponseSchema, PlaudGenerateResponseSchema, PlaudFileDetailResponseSchema } from "../schemas.js";
 
 export async function renameFile(args: {
   file_id: string;
@@ -102,4 +102,91 @@ export async function generate(args: {
 
   logger.info(`generate ${res.status === 0 ? "started" : "failed"}`, { file_id: args.file_id });
   return JSON.stringify({ success: res.status === 0, message: res.msg });
+}
+
+interface TranscriptSegment {
+  start_time: number;
+  end_time: number;
+  content: string;
+  speaker: string;
+  original_speaker: string;
+  [key: string]: unknown;
+}
+
+export async function nameSpeakers(args: {
+  file_id: string;
+  renames: { old_name: string; new_name: string }[];
+}): Promise<string> {
+  logger.debug("nameSpeakers called", { file_id: args.file_id, renames: args.renames });
+
+  // 1. Fetch file detail to get transcript content URL
+  const detail = await plaudRequest(
+    "GET",
+    `/file/detail/${args.file_id}`,
+    undefined,
+    PlaudFileDetailResponseSchema,
+  );
+
+  // Find the polished transcript first, fall back to raw
+  const polished = detail.data.content_list.find((c) => c.data_type === "transaction_polish");
+  const raw = detail.data.content_list.find((c) => c.data_type === "transaction");
+  const source = polished ?? raw;
+
+  if (!source?.data_link) {
+    return JSON.stringify({ error: "No transcript found for this file. Generate a transcript first." });
+  }
+
+  // 2. Fetch the transcript content from S3
+  logger.debug("Fetching transcript from S3", { data_type: source.data_type });
+  const transcriptRes = await fetch(source.data_link);
+  if (!transcriptRes.ok) {
+    throw new Error(`Failed to fetch transcript from S3: ${transcriptRes.status}`);
+  }
+  const segments: TranscriptSegment[] = await transcriptRes.json();
+
+  // 3. Apply speaker renames
+  const renameMap = new Map(args.renames.map((r) => [r.old_name.toLowerCase(), r.new_name]));
+  let renamed = 0;
+  for (const seg of segments) {
+    const newName = renameMap.get(seg.speaker.toLowerCase());
+    if (newName) {
+      seg.speaker = newName;
+      renamed++;
+    }
+  }
+
+  if (renamed === 0) {
+    const currentSpeakers = [...new Set(segments.map((s) => s.speaker))];
+    return JSON.stringify({ error: "No matching speakers found", current_speakers: currentSpeakers });
+  }
+
+  logger.info(`nameSpeakers renaming ${renamed} segments`, { file_id: args.file_id });
+
+  // 4. PATCH file with updated transcript
+  const patchRes = await plaudRequest(
+    "PATCH",
+    `/file/${args.file_id}`,
+    { trans_result: segments, support_mul_summ: true },
+    PlaudPatchResponseSchema,
+  );
+
+  // 5. Update source transcript content
+  await plaudRequest(
+    "POST",
+    "/ai/update_source_info",
+    {
+      file_id: args.file_id,
+      source_type: source.data_type,
+      source_id: source.data_id,
+      source_content: JSON.stringify(segments),
+    },
+    PlaudPatchResponseSchema,
+  );
+
+  const updatedSpeakers = [...new Set(segments.map((s) => s.speaker))];
+  return JSON.stringify({
+    success: patchRes.status === 0,
+    segments_updated: renamed,
+    speakers: updatedSpeakers,
+  });
 }
