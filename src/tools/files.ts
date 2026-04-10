@@ -5,8 +5,10 @@ import { PlaudFileListResponseSchema, PlaudFileDetailResponseSchema, PlaudUserRe
 export async function listFiles(args: {
   filter?: "all" | "untranscribed" | "transcribed";
   min_duration_minutes?: number;
+  limit?: number;
+  offset?: number;
 }): Promise<string> {
-  logger.debug("listFiles called", { filter: args.filter, min_duration_minutes: args.min_duration_minutes });
+  logger.debug("listFiles called", { filter: args.filter, min_duration_minutes: args.min_duration_minutes, limit: args.limit, offset: args.offset });
 
   const res = await plaudRequest("GET", "/file/simple/web", undefined, PlaudFileListResponseSchema);
   let files = res.data_file_list ?? [];
@@ -23,7 +25,12 @@ export async function listFiles(args: {
     files = files.filter((f) => f.duration >= minMs);
   }
 
-  logger.info(`listFiles returning ${files.length} files`, { filter: args.filter ?? "all" });
+  const total = files.length;
+  const offset = args.offset ?? 0;
+  const limit = args.limit ?? 20;
+  files = files.slice(offset, offset + limit);
+
+  logger.info(`listFiles returning ${files.length}/${total} files`, { filter: args.filter ?? "all", offset, limit });
 
   const summary = files.map((f) => ({
     id: f.id,
@@ -34,7 +41,7 @@ export async function listFiles(args: {
     has_summary: f.is_summary,
   }));
 
-  return JSON.stringify({ count: files.length, files: summary }, null, 2);
+  return JSON.stringify({ total, offset, limit, count: summary.length, files: summary }, null, 2);
 }
 
 export async function getFile(args: { file_id: string }): Promise<string> {
