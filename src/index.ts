@@ -88,10 +88,12 @@ const server = new McpServer(
 // File tools
 server.tool(
   "plaud_list_files",
-  "List all Plaud audio recordings with metadata",
+  "List Plaud audio recordings with metadata. Returns 20 files per page by default — use offset to paginate.",
   {
     filter: z.enum(["all", "untranscribed", "transcribed"]).optional().describe("Filter by transcription status"),
     min_duration_minutes: z.number().optional().describe("Minimum duration in minutes"),
+    limit: z.number().optional().describe("Max files to return (default: 20)"),
+    offset: z.number().optional().describe("Number of files to skip for pagination (default: 0)"),
   },
   async (args) => ({ content: [{ type: "text", text: await listFiles(args) }] })
 );
