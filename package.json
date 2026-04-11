@@ -1,9 +1,28 @@
 {
   "name": "plaud-mcp",
   "version": "1.0.0",
-  "module": "index.ts",
+  "description": "MCP server for Plaud.ai — access audio recordings, transcripts, and summaries",
+  "module": "src/index.ts",
   "type": "module",
-  "private": true,
+  "bin": {
+    "plaud-mcp": "src/index.ts"
+  },
+  "files": [
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "mcp",
+    "plaud",
+    "transcription",
+    "model-context-protocol"
+  ],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/charathram/plaud-mcp.git"
+  },
   "devDependencies": {
     "@types/bun": "latest"
   },
