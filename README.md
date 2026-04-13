@@ -6,7 +6,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 
 ## Features
 
-- **13 MCP tools** covering the full Plaud API surface
+- **14 MCP tools** covering the full Plaud API surface
 - **Browser-based login** — no manual token extraction needed
 - **Cross-platform binaries** — single-file executables, no runtime dependencies
 - **Stdio transport** — works with any MCP-compatible client
@@ -65,69 +65,34 @@ xattr -d com.apple.quarantine plaud-mcp
 
 ### 2. Login
 
-Run the login command using the binary:
+Run the login command:
 
 ```bash
 ./plaud-mcp --login
 ```
 
-To save credentials to a custom location:
-
-```bash
-./plaud-mcp --login --env /path/to/custom/.env
-```
-
-This opens your browser to web.plaud.ai. Log in normally — auth credentials are captured automatically and saved to `.env` (or the path specified with `--env`). The following values are stored:
+This opens your browser to web.plaud.ai. Sign in normally — auth credentials are captured automatically and saved to `.env`. To save credentials to a custom location, add `--env /path/to/custom/.env`. The following values are stored:
 
 - `PLAUD_AUTH_TOKEN` — JWT bearer token
 - `PLAUD_DEVICE_TAG` — device tag header
 - `PLAUD_USER_HASH` — user hash header
 - `PLAUD_DEVICE_ID` — device ID header
 
-Chrome, Chromium, Brave, Edge, and Firefox are auto-detected on Linux, macOS, and Windows. For other browsers, specify the binary with `--browser`:
+Chrome, Chromium, Brave, Edge, and Firefox are auto-detected on Linux, macOS, and Windows. For other browsers, pass `--browser /path/to/browser`.
 
-```bash
-./plaud-mcp --login --browser /usr/bin/brave-browser
-```
+### 3. Configure Claude Code
 
-Alternatively, if building from source:
+The server looks for credentials in this order: `--env` flag, then `PLAUD_ENV_FILE` environment variable, then `.env` in the current working directory.
 
-```bash
-bun install
-bun run login
-```
+Pick one of the following:
 
-Or via the `CHROME_PATH` environment variable:
-
-```bash
-CHROME_PATH=/usr/bin/brave-browser bun run login
-```
-
-### 3. Run the server
-
-The server looks for credentials in this order:
-
-1. `--env /path/to/.env` flag
-2. `PLAUD_ENV_FILE` environment variable
-3. `.env` in the current working directory
-
-```bash
-# Uses .env in current directory
-./plaud-mcp
-
-# Or specify a custom path
-./plaud-mcp --env /path/to/.env
-```
-
-### 4. Configure Claude Code
-
-Quickest:
+**Option A — CLI (quickest):**
 
 ```bash
 claude mcp add plaud -- /path/to/plaud-mcp --env /path/to/.env
 ```
 
-Or add to `.mcp.json` in your project root (shared with team):
+**Option B — Project config** (shared with team via `.mcp.json`):
 
 ```json
 {
@@ -140,7 +105,7 @@ Or add to `.mcp.json` in your project root (shared with team):
 }
 ```
 
-Or add to `~/.claude.json` for personal access across all projects:
+**Option C — Personal config** (all projects via `~/.claude.json`):
 
 ```json
 {
@@ -162,7 +127,7 @@ Restart Claude Code for the MCP server to connect.
 | Flag | Description | Applies to |
 |------|-------------|------------|
 | `--env <path>` | Path to `.env` credentials file | login, server |
-| `--browser <path>` | Path to Chromium-based browser binary | login |
+| `--browser <path>` | Path to browser binary | login |
 | `--log-level <level>` | Set log verbosity: `debug`, `info`, `warn`, `error` (default: `info`) | server |
 
 ### Environment Variables
@@ -181,6 +146,18 @@ Restart Claude Code for the MCP server to connect.
 
 ```bash
 bun install
+```
+
+### Login (dev mode)
+
+```bash
+bun run login
+```
+
+Or specify a browser via `CHROME_PATH`:
+
+```bash
+CHROME_PATH=/usr/bin/brave-browser bun run login
 ```
 
 ### Run the server
@@ -223,7 +200,7 @@ Produces cross-platform binaries in `dist/`.
 
 ### Releasing
 
-Bump the version, push the tag, and CI handles the rest:
+Bump the version, push the tag, and let CI handle the rest:
 
 ```bash
 npm version patch    # or minor/major — bumps package.json and creates a v* git tag
@@ -244,13 +221,14 @@ src/
 ├── schemas.ts            # Zod schemas for API responses (runtime validation + types)
 └── tools/
     ├── files.ts          # list_files, get_file, search_files, get_user
-    ├── content.ts        # get_transcript, get_summary
-    ├── mutations.ts      # rename, batch_rename, move_to_folder, trash
+    ├── content.ts        # get_transcript, get_summary, export_transcript
+    ├── mutations.ts      # rename, batch_rename, move_to_folder, trash, generate, name_speakers
     └── folders.ts        # list_folders
 scripts/
 └── dump-api.ts           # Dump raw API responses for schema discovery
 test/
 ├── setup.ts              # Test helpers and fetch mocks
+├── cli.test.ts
 ├── client.test.ts
 ├── files.test.ts
 ├── content.test.ts
