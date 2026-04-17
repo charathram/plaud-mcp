@@ -32,6 +32,28 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 
 ---
 
+## Install for Claude Desktop (.mcpb)
+
+The quickest path for macOS (Apple Silicon) users. One-click install, credentials stored in the macOS Keychain.
+
+1. **Capture credentials once** — download the binary for your platform (see Releases), then run:
+
+   ```bash
+   ./plaud-mcp --login
+   ```
+
+   This opens your browser, you sign in to Plaud, and four values are written to `.env`.
+
+2. **Download** `plaud-mcp-v<version>-darwin-arm64.mcpb` from the latest release and double-click it. Claude Desktop opens an install dialog.
+
+3. **Paste the four values** from your `.env` into the form fields (`Auth Token`, `Device Tag`, `User Hash`, `Device ID`). Leave `Log Level` at `info` unless debugging.
+
+4. Click **Install**. Claude Desktop restarts the MCP server and the Plaud tools are available immediately.
+
+> For Linux, Windows, or Intel-Mac builds, use the manual binary + JSON-config setup below.
+
+---
+
 ## Usage
 
 ### Prerequisites

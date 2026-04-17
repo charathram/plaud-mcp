@@ -45,12 +45,13 @@ describe("MCP server integration", () => {
     await server.close();
   });
 
-  test("server registers all 13 tools", async () => {
+  test("server registers all tools", async () => {
     // Mock fetch before importing index to prevent real API calls
     globalThis.fetch = mockFetchResponse({ code: 0 }) as any;
 
     // Dynamically build a server with same tool names as index.ts
     const expectedTools = [
+      "plaud_login",
       "plaud_list_files",
       "plaud_get_file",
       "plaud_search_files",
@@ -75,7 +76,7 @@ describe("MCP server integration", () => {
 
     // Count server.tool( registrations
     const registrations = source.match(/server\.tool\(/g);
-    expect(registrations?.length).toBe(14);
+    expect(registrations?.length).toBe(expectedTools.length);
   });
 
   test("initialize response includes instructions with tool summary", async () => {
@@ -101,6 +102,7 @@ describe("MCP server integration", () => {
     const source = await Bun.file("src/index.ts").text();
     // Extract the instructions string from source
     const expectedTools = [
+      "plaud_login",
       "plaud_list_files",
       "plaud_get_file",
       "plaud_search_files",

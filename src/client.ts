@@ -1,27 +1,52 @@
 import { resolveEnvPath } from "./env.js";
 import { logger } from "./logger.js";
+import { readCachedCredentials, type PlaudCredentials } from "./credentials.js";
 import type { z } from "zod";
 
 const BASE_URL = "https://api.plaud.ai";
 
-interface EnvConfig {
-  authToken: string;
-  deviceTag: string;
-  userHash: string;
-  deviceId: string;
-}
+const NO_CREDS_MESSAGE =
+  "No Plaud credentials found. Use the plaud_login tool to sign in (opens a browser window).";
+const EXPIRED_MESSAGE =
+  "Plaud token expired. Use the plaud_login tool to sign in again (opens a browser window).";
 
-let cachedConfig: EnvConfig | null = null;
+let cachedConfig: PlaudCredentials | null = null;
 
 export function _resetConfigCache() {
   cachedConfig = null;
 }
 
-async function loadEnv(): Promise<EnvConfig> {
+async function loadEnv(): Promise<PlaudCredentials> {
   if (cachedConfig) return cachedConfig;
 
+  // Cache file takes precedence over env vars: plaud_login writes to the
+  // cache, and that's the latest user intent. If we checked env vars first,
+  // stale MCPB user_config values would override fresh credentials.
+  const cached = await readCachedCredentials();
+  if (cached) {
+    cachedConfig = cached;
+    logger.debug("Loaded credentials from cache file");
+    return cachedConfig;
+  }
+
+  if (process.env.PLAUD_AUTH_TOKEN) {
+    cachedConfig = {
+      authToken: process.env.PLAUD_AUTH_TOKEN,
+      deviceTag: process.env.PLAUD_DEVICE_TAG ?? "",
+      userHash: process.env.PLAUD_USER_HASH ?? "",
+      deviceId: process.env.PLAUD_DEVICE_ID ?? "",
+    };
+    logger.debug("Loaded credentials from environment");
+    return cachedConfig;
+  }
+
   const envPath = resolveEnvPath();
-  const text = await Bun.file(envPath).text();
+  const envFile = Bun.file(envPath);
+  if (!(await envFile.exists())) {
+    throw new Error(NO_CREDS_MESSAGE);
+  }
+
+  const text = await envFile.text();
   const vars: Record<string, string> = {};
   for (const line of text.split("\n")) {
     const trimmed = line.trim();
@@ -31,18 +56,18 @@ async function loadEnv(): Promise<EnvConfig> {
     vars[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
   }
 
+  if (!vars.PLAUD_AUTH_TOKEN) {
+    throw new Error(NO_CREDS_MESSAGE);
+  }
+
   cachedConfig = {
-    authToken: vars.PLAUD_AUTH_TOKEN ?? "",
+    authToken: vars.PLAUD_AUTH_TOKEN,
     deviceTag: vars.PLAUD_DEVICE_TAG ?? "",
     userHash: vars.PLAUD_USER_HASH ?? "",
     deviceId: vars.PLAUD_DEVICE_ID ?? "",
   };
 
-  if (!cachedConfig.authToken) {
-    throw new Error("PLAUD_AUTH_TOKEN is missing from .env file");
-  }
-
-  logger.debug("Loaded credentials", { envPath });
+  logger.debug("Loaded credentials from .env file", { envPath });
   return cachedConfig;
 }
 
@@ -79,9 +104,8 @@ export async function plaudRequest<T = unknown>(
 
   if (res.status === 401) {
     logger.error("Auth token expired", { path });
-    throw new Error(
-      "Plaud API returned 401 — token expired. Re-extract JWT from browser at web.plaud.ai."
-    );
+    _resetConfigCache();
+    throw new Error(EXPIRED_MESSAGE);
   }
 
   if (!res.ok) {

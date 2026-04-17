@@ -1,0 +1,91 @@
+{
+  "manifest_version": "0.3",
+  "name": "plaud",
+  "display_name": "Plaud",
+  "version": "1.0.0",
+  "description": "Access Plaud.ai audio recordings, transcripts, and summaries.",
+  "long_description": "MCP server for Plaud.ai. Exposes 15 tools to sign in, list recordings, fetch transcripts and summaries, rename files, manage folders, and trigger generation.\n\nFirst-time setup: install and then ask Claude to \"sign me into Plaud\" — a browser window opens for login and credentials are captured and cached automatically. Requires a Chromium-based browser (Chrome, Brave, Edge, or Firefox) installed locally.\n\nAdvanced users may pre-fill the fields below to skip the in-app login.",
+  "author": {
+    "name": "Charathram Ranganathan"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/charathram/plaud-mcp"
+  },
+  "homepage": "https://github.com/charathram/plaud-mcp",
+  "license": "MIT",
+  "keywords": ["plaud", "transcription", "audio", "mcp"],
+  "server": {
+    "type": "binary",
+    "entry_point": "bin/plaud-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/bin/plaud-mcp",
+      "args": [],
+      "env": {
+        "PLAUD_AUTH_TOKEN": "${user_config.auth_token}",
+        "PLAUD_DEVICE_TAG": "${user_config.device_tag}",
+        "PLAUD_USER_HASH": "${user_config.user_hash}",
+        "PLAUD_DEVICE_ID": "${user_config.device_id}",
+        "PLAUD_LOG_LEVEL": "${user_config.log_level}"
+      }
+    }
+  },
+  "user_config": {
+    "auth_token": {
+      "type": "string",
+      "title": "Auth Token (JWT)",
+      "description": "Optional. Leave blank and use the plaud_login tool to sign in via a browser window. Only fill in if you already have a JWT (advanced).",
+      "required": false,
+      "sensitive": true
+    },
+    "device_tag": {
+      "type": "string",
+      "title": "Device Tag",
+      "description": "x-pld-tag header value.",
+      "required": false,
+      "sensitive": true
+    },
+    "user_hash": {
+      "type": "string",
+      "title": "User Hash",
+      "description": "x-pld-user header value.",
+      "required": false,
+      "sensitive": true
+    },
+    "device_id": {
+      "type": "string",
+      "title": "Device ID",
+      "description": "x-device-id header value.",
+      "required": false,
+      "sensitive": true
+    },
+    "log_level": {
+      "type": "string",
+      "title": "Log Level",
+      "description": "debug | info | warn | error",
+      "default": "info",
+      "required": false
+    }
+  },
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin"]
+  },
+  "tools": [
+    { "name": "plaud_login" },
+    { "name": "plaud_list_files" },
+    { "name": "plaud_get_file" },
+    { "name": "plaud_search_files" },
+    { "name": "plaud_get_user" },
+    { "name": "plaud_get_transcript" },
+    { "name": "plaud_get_summary" },
+    { "name": "plaud_export_transcript" },
+    { "name": "plaud_rename_file" },
+    { "name": "plaud_batch_rename" },
+    { "name": "plaud_move_to_folder" },
+    { "name": "plaud_list_folders" },
+    { "name": "plaud_trash_file" },
+    { "name": "plaud_generate" },
+    { "name": "plaud_name_speakers" }
+  ]
+}

@@ -1,4 +1,51 @@
 #!/usr/bin/env bun
+// Diagnostic logging — write to stderr and multiple fallback file locations.
+// Claude Desktop's subprocess may have an unusual CWD or unwritable TMPDIR, so
+// we try several known-writable paths.
+import { appendFileSync } from "fs";
+import { tmpdir, homedir } from "os";
+import { join } from "path";
+const DEBUG_PATHS: string[] = [];
+try { DEBUG_PATHS.push(join(homedir(), "plaud-mcp-startup.log")); } catch {}
+try { DEBUG_PATHS.push(join(tmpdir(), "plaud-mcp-startup.log")); } catch {}
+DEBUG_PATHS.push("/tmp/plaud-mcp-startup.log");
+
+function dlog(msg: string) {
+  const line = `[${new Date().toISOString()}] ${msg}\n`;
+  try { process.stderr.write(line); } catch {}
+  for (const p of DEBUG_PATHS) {
+    try { appendFileSync(p, line); } catch {}
+  }
+}
+dlog("STAGE 0: binary entry");
+dlog(`STAGE 0-paths: ${JSON.stringify(DEBUG_PATHS)}`);
+dlog(`STAGE 0-cwd: ${(() => { try { return process.cwd(); } catch (e) { return `ERR:${e}`; } })()}`);
+dlog(`STAGE 0-home: ${(() => { try { return homedir(); } catch (e) { return `ERR:${e}`; } })()}`);
+dlog(`STAGE 0-tmp: ${(() => { try { return tmpdir(); } catch (e) { return `ERR:${e}`; } })()}`);
+dlog(`STAGE 0a: argv=${JSON.stringify(process.argv)}`);
+dlog(`STAGE 0b: execPath=${process.execPath}`);
+dlog(`STAGE 0c: env NODE_OPTIONS=${process.env.NODE_OPTIONS ?? ""} PLAUD_LOG_LEVEL=${process.env.PLAUD_LOG_LEVEL ?? ""}`);
+
+process.on("uncaughtException", (err) => {
+  dlog(`FATAL uncaughtException: ${err instanceof Error ? err.stack ?? err.message : String(err)}`);
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  dlog(`FATAL unhandledRejection: ${reason instanceof Error ? reason.stack ?? reason.message : String(reason)}`);
+  process.exit(1);
+});
+process.on("exit", (code) => {
+  dlog(`STAGE EXIT: code=${code}`);
+});
+
+dlog("STAGE 1: registered error handlers");
+
+// NOTE on ESM hoisting: by the time we see STAGE 1, all static imports below
+// have technically been evaluated (per ESM spec). The dlog above only proves
+// fs/os/path loaded. If any of the imports below fails at module init, we'd
+// catch it via uncaughtException. If any calls process.exit during init we
+// wouldn't get STAGE 1a.
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -6,8 +53,11 @@ import { listFiles, getFile, searchFiles, getUser } from "./tools/files.js";
 import { getTranscript, getSummary, exportTranscript } from "./tools/content.js";
 import { renameFile, batchRename, moveToFolder, trashFile, generate, nameSpeakers } from "./tools/mutations.js";
 import { listFolders } from "./tools/folders.js";
+import { plaudLogin } from "./tools/auth.js";
 import { logger, parseLogLevel, setLogLevel } from "./logger.js";
 import pkg from "../package.json";
+
+dlog("STAGE 1a: all imports resolved");
 
 if (process.argv.includes("--help") || process.argv.includes("-h")) {
   console.log(`plaud-mcp v${pkg.version} — MCP server for Plaud.ai
@@ -44,18 +94,21 @@ Environment variables:
   process.exit(0);
 }
 
+dlog("STAGE 1b: past --help check");
+
 if (process.argv.includes("--version")) {
   console.log(pkg.version);
   process.exit(0);
 }
 
-if (process.argv.includes("--login")) {
-  const login = await import("./login.js");
-  await login.default;
-  process.exit(0);
-}
+dlog("STAGE 1c: past --version check");
+
+// Note: --login is handled inside main() to avoid top-level `await`, which
+// changes module evaluation semantics in bun --compile bundles and caused
+// the server to exit cleanly (code 0) before main() ran.
 
 setLogLevel(parseLogLevel());
+dlog("STAGE 1d: setLogLevel done");
 
 const server = new McpServer(
   {
@@ -67,6 +120,7 @@ const server = new McpServer(
       "Plaud MCP server — access Plaud.ai audio recordings, transcripts, and summaries.",
       "",
       "Available tools:",
+      "- plaud_login: Sign in to Plaud by opening a browser window (use this first if credentials are missing or expired)",
       "- plaud_list_files: List recordings, filter by transcription status or duration",
       "- plaud_get_file: Get detailed metadata for a specific file",
       "- plaud_search_files: Search recordings by keyword or date range",
@@ -80,11 +134,25 @@ const server = new McpServer(
       "- plaud_list_folders: List all folders/tags",
       "- plaud_trash_file: Move a file to trash",
       "",
+      "If a tool reports missing or expired credentials, call plaud_login first — it opens a browser window for the user to sign in.",
+      "",
       "Typical workflow: list files → get transcript → get summary.",
       "Use plaud_generate to transcribe files that haven't been processed yet.",
     ].join("\n"),
   },
 );
+dlog("STAGE 1e: McpServer constructed");
+
+// Auth tool
+server.tool(
+  "plaud_login",
+  "Sign in to Plaud by opening a browser window on the user's machine. Captures credentials automatically after the user signs in and caches them for future calls. Call this when another tool reports missing or expired credentials. Requires a Chromium-based browser (Chrome, Brave, Edge, or Firefox) installed locally.",
+  {
+    browser_path: z.string().optional().describe("Optional absolute path to a browser binary. Leave empty to auto-detect."),
+  },
+  async (args) => ({ content: [{ type: "text", text: await plaudLogin(args) }] })
+);
+dlog("STAGE 1f: plaud_login tool registered");
 
 // File tools
 server.tool(
@@ -236,13 +304,26 @@ server.tool(
 
 // Start server
 async function main() {
+  dlog("STAGE 3: main() entered");
+  if (process.argv.includes("--login")) {
+    dlog("STAGE 3a: --login branch");
+    const login = await import("./login.js");
+    await login.default();
+    process.exit(0);
+  }
   logger.info(`plaud-mcp v${pkg.version} starting`, { logLevel: parseLogLevel() });
+  dlog("STAGE 4: logger.info ran");
   const transport = new StdioServerTransport();
+  dlog("STAGE 5: transport created");
   await server.connect(transport);
+  dlog("STAGE 6: server.connect resolved");
   logger.info("MCP server connected via stdio");
+  dlog("STAGE 7: main() returning (event loop should stay alive)");
 }
 
+dlog("STAGE 2: tool registration done, calling main()");
 main().catch((err) => {
+  dlog(`FATAL main() rejected: ${err instanceof Error ? err.stack ?? err.message : String(err)}`);
   console.error("Fatal:", err);
   process.exit(1);
 });
