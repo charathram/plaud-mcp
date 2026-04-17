@@ -1,4 +1,13 @@
 #!/usr/bin/env bun
+process.on("uncaughtException", (err) => {
+  console.error("plaud-mcp uncaughtException:", err instanceof Error ? err.stack ?? err.message : err);
+  process.exit(1);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("plaud-mcp unhandledRejection:", reason instanceof Error ? reason.stack ?? reason.message : reason);
+  process.exit(1);
+});
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
@@ -6,6 +15,7 @@ import { listFiles, getFile, searchFiles, getUser } from "./tools/files.js";
 import { getTranscript, getSummary, exportTranscript } from "./tools/content.js";
 import { renameFile, batchRename, moveToFolder, trashFile, generate, nameSpeakers } from "./tools/mutations.js";
 import { listFolders } from "./tools/folders.js";
+import { plaudLogin } from "./tools/auth.js";
 import { logger, parseLogLevel, setLogLevel } from "./logger.js";
 import pkg from "../package.json";
 
@@ -49,11 +59,9 @@ if (process.argv.includes("--version")) {
   process.exit(0);
 }
 
-if (process.argv.includes("--login")) {
-  const login = await import("./login.js");
-  await login.default;
-  process.exit(0);
-}
+// --login is handled inside main() to avoid top-level `await`, which changes
+// module evaluation semantics in bun --compile bundles (caused the server to
+// exit cleanly before main() ran).
 
 setLogLevel(parseLogLevel());
 
@@ -67,6 +75,7 @@ const server = new McpServer(
       "Plaud MCP server — access Plaud.ai audio recordings, transcripts, and summaries.",
       "",
       "Available tools:",
+      "- plaud_login: Sign in to Plaud by opening a browser window (use this first if credentials are missing or expired)",
       "- plaud_list_files: List recordings, filter by transcription status or duration",
       "- plaud_get_file: Get detailed metadata for a specific file",
       "- plaud_search_files: Search recordings by keyword or date range",
@@ -80,10 +89,22 @@ const server = new McpServer(
       "- plaud_list_folders: List all folders/tags",
       "- plaud_trash_file: Move a file to trash",
       "",
+      "If a tool reports missing or expired credentials, call plaud_login first — it opens a browser window for the user to sign in.",
+      "",
       "Typical workflow: list files → get transcript → get summary.",
       "Use plaud_generate to transcribe files that haven't been processed yet.",
     ].join("\n"),
   },
+);
+
+// Auth tool
+server.tool(
+  "plaud_login",
+  "Sign in to Plaud by opening a browser window on the user's machine. Captures credentials automatically after the user signs in and caches them for future calls. Call this when another tool reports missing or expired credentials. Requires a Chromium-based browser (Chrome, Brave, Edge, or Firefox) installed locally.",
+  {
+    browser_path: z.string().optional().describe("Optional absolute path to a browser binary. Leave empty to auto-detect."),
+  },
+  async (args) => ({ content: [{ type: "text", text: await plaudLogin(args) }] })
 );
 
 // File tools
@@ -236,6 +257,11 @@ server.tool(
 
 // Start server
 async function main() {
+  if (process.argv.includes("--login")) {
+    const login = await import("./login.js");
+    await login.default();
+    process.exit(0);
+  }
   logger.info(`plaud-mcp v${pkg.version} starting`, { logLevel: parseLogLevel() });
   const transport = new StdioServerTransport();
   await server.connect(transport);

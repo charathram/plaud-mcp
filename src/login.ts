@@ -1,7 +1,5 @@
-import puppeteer from "puppeteer-core";
 import { resolveEnvPath } from "./env.js";
-
-const ENV_PATH = resolveEnvPath();
+import type { PlaudCredentials } from "./credentials.js";
 
 function getBrowserPaths(): string[] {
   const paths = [
@@ -60,8 +58,8 @@ function findBrowser(): string {
     if (Bun.file(p).size) return p;
   }
   throw new Error(
-    "No supported browser found. Use --browser /path/to/browser or set CHROME_PATH env var.\n" +
-    "Supported: Chrome, Chromium, Brave, Edge, Firefox, or any Chromium-based browser."
+    "No Chromium-based browser found. Install Chrome from https://www.google.com/chrome/ " +
+    "(or Brave, Edge, Firefox, Chromium) and try again. You can also pass a specific browser path."
   );
 }
 
@@ -69,15 +67,31 @@ function isFirefox(browserPath: string): boolean {
   return /firefox/i.test(browserPath);
 }
 
-async function main() {
-  const args = process.argv.slice(2);
-  const browserFlag = args.indexOf("--browser");
-  const browserPath =
-    (browserFlag !== -1 && args[browserFlag + 1]) ||
-    process.env.CHROME_PATH ||
-    findBrowser();
-  console.log(`Using browser: ${browserPath}`);
-  console.log("Opening Plaud login page...\n");
+export interface CaptureOptions {
+  browserPath?: string;
+  timeoutMs?: number;
+  onStatus?: (msg: string) => void;
+}
+
+/**
+ * Launches a browser to web.plaud.ai and intercepts the first authenticated
+ * request to api.plaud.ai to capture the 4 credential values.
+ */
+export async function captureCredentials(
+  opts: CaptureOptions = {},
+): Promise<PlaudCredentials> {
+  const timeoutMs = opts.timeoutMs ?? 5 * 60 * 1000;
+  const log = opts.onStatus ?? (() => {});
+
+  const browserPath = opts.browserPath
+    || process.env.CHROME_PATH
+    || findBrowser();
+  log(`Using browser: ${browserPath}`);
+
+  // Lazy-load puppeteer so the MCP server can start up without importing it.
+  // puppeteer-core has heavy top-level side-effects that break the compiled
+  // binary's startup when imported unconditionally.
+  const { default: puppeteer } = await import("puppeteer-core");
 
   const ff = isFirefox(browserPath);
   const browser = await puppeteer.launch({
@@ -88,54 +102,90 @@ async function main() {
     defaultViewport: null,
   });
 
-  const page = (await browser.pages())[0] ?? (await browser.newPage());
-  await page.goto("https://web.plaud.ai");
+  try {
+    const page = (await browser.pages())[0] ?? (await browser.newPage());
+    await page.goto("https://web.plaud.ai");
+    log("Waiting for you to sign in at web.plaud.ai…");
 
-  console.log("Waiting for you to log in at web.plaud.ai...");
+    return await new Promise<PlaudCredentials>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        reject(new Error(`Login timed out after ${Math.round(timeoutMs / 60000)} minutes.`));
+      }, timeoutMs);
 
-  const credentials = await new Promise<{
-    authToken: string;
-    deviceTag: string;
-    userHash: string;
-    deviceId: string;
-  }>((resolve) => {
-    page.on("request", (request) => {
-      const url = request.url();
-      if (!url.includes("api.plaud.ai")) return;
+      browser.on("disconnected", () => {
+        clearTimeout(timer);
+        reject(new Error("Browser closed before sign-in completed. Call plaud_login again when ready."));
+      });
 
-      const headers = request.headers();
-      const authToken = (headers["authorization"] || "")
-        .replace(/^bearer\s+/i, "");
+      // Wait for 200 responses from dashboard endpoints only. These are fired
+      // AFTER the user has fully signed in and the app has navigated to the
+      // authenticated view. Pre-auth or login-exchange responses (e.g. the
+      // login POST itself) can return 200 with Authorization headers that are
+      // short-lived or guest tokens and will 401 on real use.
+      const DASHBOARD_ENDPOINTS = [
+        "/user/me",
+        "/file/simple/web",
+        "/file/detail",
+        "/filetag",
+      ];
+      const SETTLE_MS = 2000;
+      let latest: PlaudCredentials | null = null;
+      let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
-      if (!authToken) return;
+      page.on("response", async (response) => {
+        const url = response.url();
+        if (!url.includes("api.plaud.ai")) return;
+        if (response.status() !== 200) return;
+        if (!DASHBOARD_ENDPOINTS.some((ep) => url.includes(ep))) return;
 
-      resolve({
-        authToken,
-        deviceTag: headers["x-pld-tag"] || "",
-        userHash: headers["x-pld-user"] || "",
-        deviceId: headers["x-device-id"] || "",
+        const request = response.request();
+        const headers = request.headers();
+        const authToken = (headers["authorization"] || "").replace(/^bearer\s+/i, "");
+        const deviceTag = headers["x-pld-tag"] || "";
+        const userHash = headers["x-pld-user"] || "";
+        const deviceId = headers["x-device-id"] || "";
+
+        if (!authToken || !deviceTag || !userHash || !deviceId) return;
+
+        latest = { authToken, deviceTag, userHash, deviceId };
+        log(`Captured dashboard credentials from ${new URL(url).pathname}, awaiting settle…`);
+
+        if (settleTimer) clearTimeout(settleTimer);
+        settleTimer = setTimeout(() => {
+          clearTimeout(timer);
+          resolve(latest!);
+        }, SETTLE_MS);
       });
     });
-  });
+  } finally {
+    await browser.close().catch(() => {});
+  }
+}
 
+/** CLI entry: captures credentials and writes them to .env. */
+async function main() {
+  const args = process.argv.slice(2);
+  const browserFlag = args.indexOf("--browser");
+  const browserPath = browserFlag !== -1 ? args[browserFlag + 1] : undefined;
+
+  console.log("Opening Plaud login page...\n");
+  const creds = await captureCredentials({
+    browserPath,
+    onStatus: (msg) => console.log(msg),
+  });
   console.log("\nCredentials captured!");
 
+  const envPath = resolveEnvPath();
   const envContent = [
-    `PLAUD_AUTH_TOKEN=${credentials.authToken}`,
-    `PLAUD_DEVICE_TAG=${credentials.deviceTag}`,
-    `PLAUD_USER_HASH=${credentials.userHash}`,
-    `PLAUD_DEVICE_ID=${credentials.deviceId}`,
+    `PLAUD_AUTH_TOKEN=${creds.authToken}`,
+    `PLAUD_DEVICE_TAG=${creds.deviceTag}`,
+    `PLAUD_USER_HASH=${creds.userHash}`,
+    `PLAUD_DEVICE_ID=${creds.deviceId}`,
     "",
   ].join("\n");
-
-  await Bun.write(ENV_PATH, envContent);
-  console.log(`Saved to ${ENV_PATH}`);
-
-  await browser.close();
+  await Bun.write(envPath, envContent);
+  console.log(`Saved to ${envPath}`);
   console.log("Done. You can now use the MCP server.");
 }
 
-export default main().catch((err) => {
-  console.error("Login failed:", err.message);
-  process.exit(1);
-});
+export default main;

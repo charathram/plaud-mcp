@@ -3,6 +3,17 @@ import { _resetConfigCache } from "../src/client.js";
 import { tmpdir } from "os";
 import { join } from "path";
 
+// Clear any ambient Plaud credentials so the .env-file path is exercised.
+// Tests that want to assert the env-var precedence branch set these explicitly.
+delete process.env.PLAUD_AUTH_TOKEN;
+delete process.env.PLAUD_DEVICE_TAG;
+delete process.env.PLAUD_USER_HASH;
+delete process.env.PLAUD_DEVICE_ID;
+
+// Point credentials cache at a per-run tmp path that doesn't exist by default,
+// so tests don't pick up real credentials from ~/.plaud-mcp/credentials.json.
+process.env.PLAUD_CREDENTIALS_FILE = join(tmpdir(), `plaud-mcp-test-creds-${process.pid}.json`);
+
 // Write a test .env file and point PLAUD_ENV_FILE to it
 const testEnvPath = join(tmpdir(), "plaud-mcp-test.env");
 await Bun.write(

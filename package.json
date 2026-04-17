@@ -1,6 +1,6 @@
 {
   "name": "plaud-mcp",
-  "version": "1.0.0",
+  "version": "1.1.11",
   "description": "MCP server for Plaud.ai — access audio recordings, transcripts, and summaries",
   "module": "src/index.ts",
   "type": "module",
@@ -34,7 +34,8 @@
     "start": "bun run src/index.ts",
     "inspect": "bunx @modelcontextprotocol/inspector bun src/index.ts",
     "dump-api": "bun scripts/dump-api.ts",
-    "build": "bash build.sh"
+    "build": "bash build.sh",
+    "pack:mcpb": "bash scripts/pack-mcpb.sh"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",

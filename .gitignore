@@ -6,6 +6,7 @@ out
 dist
 plaud-mcp
 *.tgz
+*.mcpb
 
 # code coverage
 coverage
