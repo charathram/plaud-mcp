@@ -92,7 +92,7 @@ export type PlaudFileDetailResponse = z.infer<typeof PlaudFileDetailResponseSche
 
 export const PlaudFolderSchema = z.object({
   id: z.string(),
-  tag_name: z.string(),
+  tag_name: z.string().nullish(),
 }).passthrough();
 
 export type PlaudFolder = z.infer<typeof PlaudFolderSchema>;

@@ -27,4 +27,25 @@ describe("listFolders", () => {
     const result = JSON.parse(await listFolders());
     expect(result.count).toBe(0);
   });
+
+  test("tolerates folders with missing tag_name", async () => {
+    globalThis.fetch = mockFetchResponse({
+      status: 0,
+      msg: "success",
+      data_filetag_total: 3,
+      data_filetag_list: [
+        { id: "t1", tag_name: "Work" },
+        { id: "t2" },
+        { id: "t3", tag_name: null },
+      ],
+    }) as any;
+
+    const result = JSON.parse(await listFolders());
+    expect(result.count).toBe(3);
+    expect(result.folders).toEqual([
+      { id: "t1", name: "Work" },
+      { id: "t2", name: null },
+      { id: "t3", name: null },
+    ]);
+  });
 });
