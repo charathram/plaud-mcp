@@ -58,9 +58,83 @@ export const PlaudContentItemSchema = z.object({
   data_title: z.string(),
   data_tab_name: z.string(),
   data_link: z.string(),
+  // Per-item metadata varies by data_type:
+  //   transaction / outline           → { task_id }
+  //   transaction_polish              → { task_id, origin, error_code }
+  //   auto_sum_note / sum_multi_note  → { summary_id, summ_type, summ_type_type, used_template }
+  extra: z.record(z.string(), z.unknown()).optional(),
 }).passthrough();
 
 export type PlaudContentItem = z.infer<typeof PlaudContentItemSchema>;
+
+export const PlaudUsedTemplateSchema = z.object({
+  template_id: z.string(),
+  template_type: z.string(),
+  template_version_id: z.string(),
+}).passthrough();
+
+export type PlaudUsedTemplate = z.infer<typeof PlaudUsedTemplateSchema>;
+
+export const PlaudRecommendQuestionSchema = z.object({
+  category: z.string(),
+  question: z.string(),
+}).passthrough();
+
+export type PlaudRecommendQuestion = z.infer<typeof PlaudRecommendQuestionSchema>;
+
+export const PlaudAiContentHeaderSchema = z.object({
+  category: z.string(),
+  headline: z.string(),
+  industry_category: z.string().optional(),
+  keywords: z.array(z.string()).optional(),
+  language_code: z.string().optional(),
+  original_category: z.string().optional(),
+  recommend_questions: z.array(PlaudRecommendQuestionSchema).optional(),
+  summary_id: z.string().optional(),
+  used_template: PlaudUsedTemplateSchema.optional(),
+}).passthrough();
+
+export type PlaudAiContentHeader = z.infer<typeof PlaudAiContentHeaderSchema>;
+
+export const PlaudTranConfigSchema = z.object({
+  created_at: z.string(),
+  diarization: z.number(),
+  language: z.string(),
+  llm: z.string(),
+  type: z.string(),
+  type_type: z.string(),
+}).passthrough();
+
+export type PlaudTranConfig = z.infer<typeof PlaudTranConfigSchema>;
+
+export const PlaudTaskIdInfoSchema = z.object({
+  outline_task_id: z.string().optional(),
+  trans_task_id: z.string().optional(),
+}).passthrough();
+
+export type PlaudTaskIdInfo = z.infer<typeof PlaudTaskIdInfoSchema>;
+
+export const PlaudExtraDataSchema = z.object({
+  aiContentForm: z.record(z.string(), z.unknown()).optional(),
+  aiContentHeader: PlaudAiContentHeaderSchema.optional(),
+  has_replaced_speaker: z.boolean().optional(),
+  last_trans_app_platform: z.string().optional(),
+  last_trans_device_id: z.string().optional(),
+  model: z.string().optional(),
+  task_id_info: PlaudTaskIdInfoSchema.optional(),
+  tranConfig: PlaudTranConfigSchema.optional(),
+  used_template: PlaudUsedTemplateSchema.optional(),
+}).passthrough();
+
+export type PlaudExtraData = z.infer<typeof PlaudExtraDataSchema>;
+
+// data_content is a JSON-encoded string (the parsed summary payload), not a parsed object.
+export const PlaudPreDownloadContentSchema = z.object({
+  data_id: z.string(),
+  data_content: z.string(),
+}).passthrough();
+
+export type PlaudPreDownloadContent = z.infer<typeof PlaudPreDownloadContentSchema>;
 
 // File detail endpoint returns a different shape than the list endpoint.
 // The detail object uses file_id/file_name and has content_list.
@@ -78,6 +152,14 @@ export const PlaudFileDetailDataSchema = z.object({
   filetag_id_list: z.array(z.string()),
   content_list: z.array(PlaudContentItemSchema),
   has_thought_partner: z.boolean(),
+  // Speaker voice fingerprints — keys are speaker labels ("Speaker 1", ...), values are 256-dim float arrays.
+  embeddings: z.record(z.string(), z.array(z.number())).optional(),
+  // Maps internal storage paths (e.g. summary poster images) to pre-signed S3 URLs.
+  download_path_mapping: z.record(z.string(), z.string()).optional(),
+  // Pre-fetched summary content keyed by data_id, saving a follow-up S3 round trip.
+  pre_download_content_list: z.array(PlaudPreDownloadContentSchema).optional(),
+  // Aggregated AI summary metadata: template, model, language, headline, keywords, recommended questions.
+  extra_data: PlaudExtraDataSchema.optional(),
 }).passthrough();
 
 export type PlaudFileDetailData = z.infer<typeof PlaudFileDetailDataSchema>;

@@ -69,6 +69,93 @@ describe("getFile", () => {
     expect(result.file_id).toBe("1");
     expect(result.file_name).toBe("Test");
   });
+
+  test("surfaces enriched metadata fields from /file/detail", async () => {
+    const data = {
+      file_id: "1",
+      file_name: "Test",
+      file_version: 1,
+      duration: 100000,
+      is_trash: false,
+      start_time: 1736071200000,
+      scene: 0,
+      serial_number: "",
+      session_id: 1,
+      wait_pull: 0,
+      filetag_id_list: [],
+      content_list: [
+        {
+          data_id: "source_transaction:1",
+          data_type: "transaction",
+          task_status: 1,
+          err_code: "",
+          err_msg: "",
+          data_title: "",
+          data_tab_name: "",
+          data_link: "https://example.com/transcript",
+          extra: { task_id: "trans-task-1" },
+        },
+        {
+          data_id: "auto_sum:1",
+          data_type: "auto_sum_note",
+          task_status: 1,
+          err_code: "",
+          err_msg: "",
+          data_title: "Summary",
+          data_tab_name: "Summary",
+          data_link: "https://example.com/summary",
+          extra: {
+            summary_id: "sum-1",
+            summ_type: "REASONING-NOTE",
+            summ_type_type: "system",
+            used_template: { template_id: "REASONING-NOTE", template_type: "official", template_version_id: "" },
+          },
+        },
+      ],
+      has_thought_partner: false,
+      embeddings: {
+        "Speaker 1": [0.1, -0.2, 0.3],
+        "Speaker 2": [-0.4, 0.5, -0.6],
+      },
+      download_path_mapping: {
+        "permanent/poster.png": "https://example.com/poster.png?signed=1",
+      },
+      pre_download_content_list: [
+        { data_id: "auto_sum:1", data_content: '{"ai_content": "# Summary"}' },
+      ],
+      extra_data: {
+        aiContentForm: {},
+        aiContentHeader: {
+          category: "Reasoning Summary",
+          headline: "Test headline",
+          keywords: ["topic-a", "topic-b"],
+          language_code: "en",
+          recommend_questions: [{ category: "key_insights", question: "What happened?" }],
+          summary_id: "sum-1",
+          used_template: { template_id: "REASONING-NOTE", template_type: "official", template_version_id: "" },
+        },
+        has_replaced_speaker: false,
+        last_trans_app_platform: "WEB",
+        last_trans_device_id: "device-x",
+        model: "gpt-5",
+        task_id_info: { outline_task_id: "outline-1", trans_task_id: "trans-1" },
+        tranConfig: { created_at: "2026-04-28T00:00:00", diarization: 1, language: "en", llm: "auto", type: "AUTO-SELECT", type_type: "system" },
+        used_template: { template_id: "REASONING-NOTE", template_type: "official", template_version_id: "" },
+      },
+    };
+    globalThis.fetch = mockFetchResponse({ status: 0, msg: "success", data }) as any;
+
+    const result = JSON.parse(await getFile({ file_id: "1" }));
+    expect(result.content_list[0].extra.task_id).toBe("trans-task-1");
+    expect(result.content_list[1].extra.used_template.template_id).toBe("REASONING-NOTE");
+    expect(result.embeddings["Speaker 1"]).toEqual([0.1, -0.2, 0.3]);
+    expect(result.download_path_mapping["permanent/poster.png"]).toBe("https://example.com/poster.png?signed=1");
+    expect(result.pre_download_content_list[0].data_id).toBe("auto_sum:1");
+    expect(result.extra_data.aiContentHeader.headline).toBe("Test headline");
+    expect(result.extra_data.aiContentHeader.keywords).toEqual(["topic-a", "topic-b"]);
+    expect(result.extra_data.model).toBe("gpt-5");
+    expect(result.extra_data.tranConfig.language).toBe("en");
+  });
 });
 
 describe("searchFiles", () => {

@@ -16,7 +16,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 | Tool | Description |
 |------|-------------|
 | `plaud_list_files` | List all recordings, optionally filtered by transcription status or minimum duration |
-| `plaud_get_file` | Get detailed metadata for a specific file |
+| `plaud_get_file` | Get detailed metadata for a specific file, including AI summary metadata, pre-fetched summary content, speaker embeddings, and pre-signed download URLs |
 | `plaud_search_files` | Search recordings by keyword or date range |
 | `plaud_get_transcript` | Fetch raw or polished transcript text |
 | `plaud_get_summary` | Fetch AI-generated summary |
@@ -29,6 +29,20 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 | `plaud_generate` | Generate transcript and summary for a file (auto or custom options) |
 | `plaud_name_speakers` | Rename speakers in a transcript (e.g. "Speaker 2" to "Alice") |
 | `plaud_get_user` | Get current user profile |
+
+#### `plaud_get_file` response detail
+
+In addition to core file metadata (`file_id`, `file_name`, `duration`, etc.) and the `content_list` of transcript/summary references, `plaud_get_file` surfaces the enriched fields that Plaud's `/file/detail/{id}` endpoint returns:
+
+- `extra_data.aiContentHeader` — headline, category, language, keywords, recommended questions, and the template used to generate the summary
+- `extra_data.tranConfig` — transcription configuration (language, LLM, diarization, summary template)
+- `extra_data.model`, `extra_data.task_id_info`, `extra_data.last_trans_*` — model and task identifiers from the most recent transcription
+- `pre_download_content_list` — summary content already fetched server-side, keyed by `data_id`, avoiding a follow-up S3 round trip
+- `download_path_mapping` — pre-signed S3 URLs for assets like summary poster images
+- `embeddings` — 256-dim speaker voice fingerprints keyed by speaker label
+- `content_list[i].extra` — per-item metadata (task IDs for transcript/outline items, template info for summary items)
+
+The shape of these fields is captured in `src/schemas.ts` (Zod schemas with `.passthrough()`, so any further additions from the Plaud API flow through unchanged).
 
 ---
 
