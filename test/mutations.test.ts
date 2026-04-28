@@ -46,7 +46,7 @@ describe("batchRename", () => {
 });
 
 describe("moveToFolder", () => {
-  test("sends PATCH with folder id", async () => {
+  test("sends PATCH with filetag_id_list array", async () => {
     const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
     globalThis.fetch = mockFetch as any;
 
@@ -54,7 +54,7 @@ describe("moveToFolder", () => {
     expect(result.success).toBe(true);
 
     const body = JSON.parse((mockFetch.mock.calls[0] as [string, RequestInit])[1].body as string);
-    expect(body).toEqual({ file_tag_id: "folder1" });
+    expect(body).toEqual({ filetag_id_list: ["folder1"] });
   });
 });
 

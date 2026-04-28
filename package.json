@@ -1,6 +1,6 @@
 {
   "name": "plaud-mcp",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "MCP server for Plaud.ai — access audio recordings, transcripts, and summaries",
   "module": "src/index.ts",
   "type": "module",

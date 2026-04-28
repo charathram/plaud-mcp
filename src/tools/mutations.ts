@@ -49,10 +49,13 @@ export async function moveToFolder(args: {
   folder_id: string;
 }): Promise<string> {
   logger.debug("moveToFolder called", { file_id: args.file_id, folder_id: args.folder_id });
+  // Plaud silently 200s on unknown body keys (e.g. file_tag_id, filetag_id) without
+  // applying the change. The actual field name is filetag_id_list, an array that
+  // replaces the file's current tag set.
   const res = await plaudRequest(
     "PATCH",
     `/file/${args.file_id}`,
-    { file_tag_id: args.folder_id },
+    { filetag_id_list: [args.folder_id] },
     PlaudPatchResponseSchema,
   );
   return JSON.stringify({ success: res.status === 0, message: res.msg });
