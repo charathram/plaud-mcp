@@ -59,7 +59,7 @@ describe("moveToFolder", () => {
 });
 
 describe("trashFile", () => {
-  test("sends PATCH with is_deleted", async () => {
+  test("sends PATCH with is_trash", async () => {
     const mockFetch = mockFetchResponse({ status: 0, msg: "ok" });
     globalThis.fetch = mockFetch as any;
 
@@ -67,7 +67,7 @@ describe("trashFile", () => {
     expect(result.success).toBe(true);
 
     const body = JSON.parse((mockFetch.mock.calls[0] as [string, RequestInit])[1].body as string);
-    expect(body).toEqual({ is_deleted: 1 });
+    expect(body).toEqual({ is_trash: true });
   });
 });
 

@@ -63,10 +63,12 @@ export async function moveToFolder(args: {
 
 export async function trashFile(args: { file_id: string }): Promise<string> {
   logger.debug("trashFile called", { file_id: args.file_id });
+  // Plaud silently 200s on unknown body keys (e.g. is_deleted) without applying
+  // the change. The actual key is is_trash: true, matching the response field.
   const res = await plaudRequest(
     "PATCH",
     `/file/${args.file_id}`,
-    { is_deleted: 1 },
+    { is_trash: true },
     PlaudPatchResponseSchema,
   );
   return JSON.stringify({ success: res.status === 0, message: res.msg });
