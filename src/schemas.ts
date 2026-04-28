@@ -4,7 +4,7 @@ import { z } from "zod";
 // These are the single source of truth for both runtime validation and TypeScript types.
 // Use .passthrough() so unknown fields from the API are preserved, not stripped.
 //
-// Verified against real API responses on 2026-04-08.
+// Verified against real API responses on 2026-04-28.
 // Run `bun run dump-api` to re-verify.
 
 // Common response envelope: all endpoints return status + msg (except /user/me which omits msg)
@@ -92,7 +92,7 @@ export type PlaudFileDetailResponse = z.infer<typeof PlaudFileDetailResponseSche
 
 export const PlaudFolderSchema = z.object({
   id: z.string(),
-  tag_name: z.string().nullish(),
+  name: z.string().nullish(),
 }).passthrough();
 
 export type PlaudFolder = z.infer<typeof PlaudFolderSchema>;
