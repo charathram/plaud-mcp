@@ -57,8 +57,11 @@ async function main() {
   console.log("Plaud API Response Dump");
   console.log(`Date: ${new Date().toISOString()}`);
 
-  // File list
+  // File list (live recordings)
   await dumpEndpoint("File List", "GET", "/file/simple/web");
+
+  // File list (trashed recordings) — same field shape but separate endpoint call
+  await dumpEndpoint("File List (Trashed)", "GET", "/file/simple/web?is_trash=1");
 
   // File detail (uses first file from list)
   try {

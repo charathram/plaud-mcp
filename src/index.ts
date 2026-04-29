@@ -2,7 +2,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
 import { z } from "zod";
-import { listFiles, getFile, searchFiles, getUser } from "./tools/files.js";
+import { listFiles, getFile, getMetadata, searchFiles, getUser } from "./tools/files.js";
 import { getTranscript, getSummary, exportTranscript } from "./tools/content.js";
 import { renameFile, batchRename, moveToFolder, trashFile, generate, nameSpeakers } from "./tools/mutations.js";
 import { listFolders } from "./tools/folders.js";
@@ -68,7 +68,8 @@ const server = new McpServer(
       "",
       "Available tools:",
       "- plaud_list_files: List recordings, filter by transcription status or duration",
-      "- plaud_get_file: Get detailed metadata for a specific file",
+      "- plaud_get_file: Get file metadata, content links, and any pre-fetched summary payload (no raw transcript text — use plaud_get_transcript)",
+      "- plaud_get_metadata: Fetch metadata only for one or more files by id (live + trashed)",
       "- plaud_search_files: Search recordings by keyword or date range",
       "- plaud_get_user: Get current user profile",
       "- plaud_get_transcript: Fetch raw or polished transcript text",
@@ -101,11 +102,20 @@ server.tool(
 
 server.tool(
   "plaud_get_file",
-  "Get detailed info for a specific file including content links",
+  "Get file metadata, content links, and any pre-fetched summary payload. Does not include raw transcript text — use plaud_get_transcript for that.",
   {
     file_id: z.string().describe("The file ID"),
   },
   async (args) => ({ content: [{ type: "text", text: await getFile(args) }] })
+);
+
+server.tool(
+  "plaud_get_metadata",
+  "Fetch metadata only for one or more files by id. Returns the full per-file metadata block (filename, size, durations, timestamps, status flags, tags, keywords) — no transcript, summary, content links, or embeddings. Resolves both live and trashed files. Returns { found, missing } so callers can distinguish unknown ids from existing ones.",
+  {
+    file_ids: z.array(z.string()).min(1).describe("One or more file IDs to look up"),
+  },
+  async (args) => ({ content: [{ type: "text", text: await getMetadata(args) }] })
 );
 
 server.tool(
