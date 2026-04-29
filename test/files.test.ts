@@ -1,7 +1,7 @@
 import { describe, test, expect } from "bun:test";
-import { mockFetchResponse } from "./setup.js";
+import { mockFetchResponse, mockFetchRouter } from "./setup.js";
 import "./setup.js";
-import { listFiles, getFile, searchFiles, getUser } from "../src/tools/files.js";
+import { listFiles, getFile, getMetadata, searchFiles, getUser } from "../src/tools/files.js";
 
 const MOCK_FILES = [
   { id: "1", filename: "Meeting Jan 5", filesize: 1000, filetype: "wav", fullname: "", file_md5: "", ori_ready: true, version: 1, version_ms: 0, edit_time: 0, edit_from: "web", is_trash: false, start_time: 1736071200000, end_time: 1736074800000, duration: 3600000, timezone: -8, zonemins: -480, scene: 0, filetag_id_list: [], serial_number: "", is_trans: true, is_summary: true, is_markmemo: false, wait_pull: 0, keywords: [] },
@@ -155,6 +155,69 @@ describe("getFile", () => {
     expect(result.extra_data.aiContentHeader.keywords).toEqual(["topic-a", "topic-b"]);
     expect(result.extra_data.model).toBe("gpt-5");
     expect(result.extra_data.tranConfig.language).toBe("en");
+  });
+});
+
+describe("getMetadata", () => {
+  const TRASHED_FILE = { id: "T1", filename: "Trashed call", filesize: 600, filetype: "wav", fullname: "", file_md5: "", ori_ready: true, version: 1, version_ms: 0, edit_time: 0, edit_from: "web", is_trash: true, start_time: 1736300000000, end_time: 1736301000000, duration: 1000000, timezone: -8, zonemins: -480, scene: 0, filetag_id_list: [], serial_number: "", is_trans: false, is_summary: false, is_markmemo: false, wait_pull: 0, keywords: [] };
+
+  // Router needs the ?is_trash=1 pattern listed first so it wins over the bare /file/simple/web prefix.
+  function metadataRouter() {
+    return mockFetchRouter({
+      "is_trash=1": { body: { status: 0, msg: "success", data_file_total: 1, data_file_list: [TRASHED_FILE] } },
+      "/file/simple/web": { body: { status: 0, msg: "success", data_file_total: 3, data_file_list: MOCK_FILES } },
+    });
+  }
+
+  test("returns metadata for a single file id", async () => {
+    globalThis.fetch = metadataRouter() as any;
+    const result = JSON.parse(await getMetadata({ file_ids: ["1"] }));
+    expect(result.found).toHaveLength(1);
+    expect(result.found[0].id).toBe("1");
+    expect(result.missing).toEqual([]);
+  });
+
+  test("returns metadata for multiple ids in request order", async () => {
+    globalThis.fetch = metadataRouter() as any;
+    const result = JSON.parse(await getMetadata({ file_ids: ["3", "1"] }));
+    expect(result.found.map((f: any) => f.id)).toEqual(["3", "1"]);
+    expect(result.missing).toEqual([]);
+  });
+
+  test("resolves trashed files alongside live files", async () => {
+    globalThis.fetch = metadataRouter() as any;
+    const result = JSON.parse(await getMetadata({ file_ids: ["1", "T1"] }));
+    expect(result.found).toHaveLength(2);
+    const live = result.found.find((f: any) => f.id === "1");
+    const trashed = result.found.find((f: any) => f.id === "T1");
+    expect(live.is_trash).toBe(false);
+    expect(trashed.is_trash).toBe(true);
+    expect(result.missing).toEqual([]);
+  });
+
+  test("reports unknown ids in missing array", async () => {
+    globalThis.fetch = metadataRouter() as any;
+    const result = JSON.parse(await getMetadata({ file_ids: ["1", "ghost", "T1"] }));
+    expect(result.found.map((f: any) => f.id).sort()).toEqual(["1", "T1"]);
+    expect(result.missing).toEqual(["ghost"]);
+  });
+
+  test("returns empty found and full missing when no ids resolve", async () => {
+    globalThis.fetch = metadataRouter() as any;
+    const result = JSON.parse(await getMetadata({ file_ids: ["nope-1", "nope-2"] }));
+    expect(result.found).toEqual([]);
+    expect(result.missing).toEqual(["nope-1", "nope-2"]);
+  });
+
+  test("preserves all 25 metadata fields per file", async () => {
+    globalThis.fetch = metadataRouter() as any;
+    const result = JSON.parse(await getMetadata({ file_ids: ["1"] }));
+    expect(Object.keys(result.found[0]).sort()).toEqual([
+      "duration", "edit_from", "edit_time", "end_time", "file_md5", "filename", "filesize",
+      "filetag_id_list", "filetype", "fullname", "id", "is_markmemo", "is_summary", "is_trans",
+      "is_trash", "keywords", "ori_ready", "scene", "serial_number", "start_time", "timezone",
+      "version", "version_ms", "wait_pull", "zonemins",
+    ]);
   });
 });
 

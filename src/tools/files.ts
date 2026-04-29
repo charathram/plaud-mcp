@@ -55,6 +55,31 @@ export async function getFile(args: { file_id: string }): Promise<string> {
   return JSON.stringify(res.data, null, 2);
 }
 
+// /file/simple/web returns only live files by default; trashed files require ?is_trash=1.
+// Query both in parallel so callers can resolve any id (live or trashed) in one tool call.
+export async function getMetadata(args: { file_ids: string[] }): Promise<string> {
+  logger.debug("getMetadata called", { count: args.file_ids.length });
+  const [live, trashed] = await Promise.all([
+    plaudRequest("GET", "/file/simple/web", undefined, PlaudFileListResponseSchema),
+    plaudRequest("GET", "/file/simple/web?is_trash=1", undefined, PlaudFileListResponseSchema),
+  ]);
+
+  const byId = new Map<string, (typeof live.data_file_list)[number]>();
+  for (const f of live.data_file_list ?? []) byId.set(f.id, f);
+  for (const f of trashed.data_file_list ?? []) byId.set(f.id, f);
+
+  const found: typeof live.data_file_list = [];
+  const missing: string[] = [];
+  for (const id of args.file_ids) {
+    const f = byId.get(id);
+    if (f) found.push(f);
+    else missing.push(id);
+  }
+
+  logger.info(`getMetadata returning ${found.length}/${args.file_ids.length}`, { missing: missing.length });
+  return JSON.stringify({ found, missing }, null, 2);
+}
+
 export async function searchFiles(args: {
   query?: string;
   start_date?: string;

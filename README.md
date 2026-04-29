@@ -6,7 +6,7 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 
 ## Features
 
-- **14 MCP tools** covering the full Plaud API surface
+- **15 MCP tools** covering the full Plaud API surface
 - **Browser-based login** — no manual token extraction needed
 - **Cross-platform binaries** — single-file executables, no runtime dependencies
 - **Stdio transport** — works with any MCP-compatible client
@@ -16,7 +16,8 @@ Built with [Bun](https://bun.sh) + TypeScript. Compiles to a single native binar
 | Tool | Description |
 |------|-------------|
 | `plaud_list_files` | List all recordings, optionally filtered by transcription status or minimum duration |
-| `plaud_get_file` | Get detailed metadata for a specific file, including AI summary metadata, pre-fetched summary content, speaker embeddings, and pre-signed download URLs |
+| `plaud_get_file` | Get a single file's full `/file/detail` payload — metadata, content links, pre-fetched summary content, speaker embeddings, and pre-signed download URLs. Use `plaud_get_metadata` if you only need metadata. |
+| `plaud_get_metadata` | Fetch metadata only for one or more files by id (live or trashed). Returns `{ found, missing }`. No transcript, summary, content links, or embeddings. |
 | `plaud_search_files` | Search recordings by keyword or date range |
 | `plaud_get_transcript` | Fetch raw or polished transcript text |
 | `plaud_get_summary` | Fetch AI-generated summary |
@@ -43,6 +44,10 @@ In addition to core file metadata (`file_id`, `file_name`, `duration`, etc.) and
 - `content_list[i].extra` — per-item metadata (task IDs for transcript/outline items, template info for summary items)
 
 The shape of these fields is captured in `src/schemas.ts` (Zod schemas with `.passthrough()`, so any further additions from the Plaud API flow through unchanged).
+
+#### `plaud_get_metadata` response detail
+
+`plaud_get_metadata` resolves ids by hitting `/file/simple/web` (live recordings) and `/file/simple/web?is_trash=1` (trashed recordings) in parallel and merging the results, since the default list endpoint excludes trashed files. Each returned file carries the full per-file metadata block from the list endpoint: `id`, `filename`, `fullname`, `filetype`, `filesize`, `file_md5`, `duration`, `start_time`, `end_time`, `edit_time`, `edit_from`, `version`, `version_ms`, `timezone`, `zonemins`, `scene`, `serial_number`, `is_trans`, `is_summary`, `is_markmemo`, `is_trash`, `ori_ready`, `wait_pull`, `filetag_id_list`, and `keywords`. Ids that don't match any live or trashed recording are reported in the `missing` array.
 
 ---
 

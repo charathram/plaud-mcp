@@ -45,7 +45,7 @@ describe("MCP server integration", () => {
     await server.close();
   });
 
-  test("server registers all 13 tools", async () => {
+  test("server registers all tools", async () => {
     // Mock fetch before importing index to prevent real API calls
     globalThis.fetch = mockFetchResponse({ code: 0 }) as any;
 
@@ -53,6 +53,7 @@ describe("MCP server integration", () => {
     const expectedTools = [
       "plaud_list_files",
       "plaud_get_file",
+      "plaud_get_metadata",
       "plaud_search_files",
       "plaud_get_user",
       "plaud_get_transcript",
@@ -75,7 +76,7 @@ describe("MCP server integration", () => {
 
     // Count server.tool( registrations
     const registrations = source.match(/server\.tool\(/g);
-    expect(registrations?.length).toBe(14);
+    expect(registrations?.length).toBe(expectedTools.length);
   });
 
   test("initialize response includes instructions with tool summary", async () => {
