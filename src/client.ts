@@ -56,6 +56,8 @@ export async function plaudRequest<T = unknown>(
 
   const headers: Record<string, string> = {
     Authorization: `bearer ${config.authToken}`,
+    "User-Agent":
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Safari/537.36",
     "edit-from": "web",
     "app-platform": "web",
     "app-language": "en",
