@@ -2,7 +2,7 @@ import { resolveEnvPath } from "./env.js";
 import { logger } from "./logger.js";
 import type { z } from "zod";
 
-const BASE_URL = "https://api.plaud.ai";
+const BASE_URL = process.env.PLAUD_API_BASE_URL || "https://api.plaud.ai";
 
 interface EnvConfig {
   authToken: string;

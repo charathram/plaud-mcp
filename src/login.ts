@@ -101,7 +101,7 @@ async function main() {
   }>((resolve) => {
     page.on("request", (request) => {
       const url = request.url();
-      if (!url.includes("api.plaud.ai")) return;
+      if (!/api(-[a-z0-9]+)?\.plaud\.ai/.test(url)) return;
 
       const headers = request.headers();
       const authToken = (headers["authorization"] || "")
