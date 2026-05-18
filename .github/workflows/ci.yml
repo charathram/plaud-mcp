@@ -41,7 +41,7 @@ jobs:
 
       - run: bash build.sh
 
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: binaries
           path: dist/*/plaud-mcp*
@@ -60,7 +60,7 @@ jobs:
         id: version
         run: echo "tag=v$(jq -r .version package.json)" >> "$GITHUB_OUTPUT"
 
-      - uses: actions/download-artifact@v5
+      - uses: actions/download-artifact@v7
         with:
           name: binaries
           path: dist
