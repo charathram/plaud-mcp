@@ -3,6 +3,10 @@ import { resolveEnvPath } from "./env.js";
 
 const ENV_PATH = resolveEnvPath();
 
+export function isPlaudApiUrl(url: string): boolean {
+  return /api(-[a-z0-9]+)?\.plaud\.ai/.test(url);
+}
+
 function getBrowserPaths(): string[] {
   const paths = [
     // Chrome
@@ -101,7 +105,7 @@ async function main() {
   }>((resolve) => {
     page.on("request", (request) => {
       const url = request.url();
-      if (!/api(-[a-z0-9]+)?\.plaud\.ai/.test(url)) return;
+      if (!isPlaudApiUrl(url)) return;
 
       const headers = request.headers();
       const authToken = (headers["authorization"] || "")
@@ -135,7 +139,11 @@ async function main() {
   console.log("Done. You can now use the MCP server.");
 }
 
-export default main().catch((err) => {
-  console.error("Login failed:", err.message);
-  process.exit(1);
-});
+export { main };
+
+if (import.meta.main) {
+  main().catch((err) => {
+    console.error("Login failed:", err.message);
+    process.exit(1);
+  });
+}

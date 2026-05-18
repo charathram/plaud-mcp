@@ -1,5 +1,7 @@
-import { describe, test, expect, beforeEach, mock } from "bun:test";
+import { describe, test, expect, beforeEach, afterEach, mock } from "bun:test";
 import { mockFetchResponse } from "./setup.js";
+import { tmpdir } from "os";
+import { join } from "path";
 
 // Must import setup first to configure env
 import "./setup.js";
@@ -59,5 +61,90 @@ describe("plaudRequest", () => {
     ) as any;
 
     expect(plaudRequest("GET", "/bad")).rejects.toThrow("failed (500)");
+  });
+});
+
+describe("plaudRequest base URL resolution", () => {
+  const defaultEnvPath = process.env.PLAUD_ENV_FILE;
+
+  afterEach(() => {
+    delete process.env.PLAUD_API_BASE_URL;
+    if (defaultEnvPath) {
+      process.env.PLAUD_ENV_FILE = defaultEnvPath;
+    } else {
+      delete process.env.PLAUD_ENV_FILE;
+    }
+    _resetConfigCache();
+  });
+
+  test("defaults to https://api.plaud.ai", async () => {
+    const mockFetch = mockFetchResponse({ code: 0 });
+    globalThis.fetch = mockFetch as any;
+
+    await plaudRequest("GET", "/user/me");
+
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api.plaud.ai/user/me");
+  });
+
+  test("respects PLAUD_API_BASE_URL env var", async () => {
+    process.env.PLAUD_API_BASE_URL = "https://api-euc1.plaud.ai";
+    _resetConfigCache();
+    const mockFetch = mockFetchResponse({ code: 0 });
+    globalThis.fetch = mockFetch as any;
+
+    await plaudRequest("GET", "/user/me");
+
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api-euc1.plaud.ai/user/me");
+  });
+
+  test("reads PLAUD_API_BASE_URL from .env file", async () => {
+    const envFilePath = join(tmpdir(), "plaud-mcp-baseurl-test.env");
+    await Bun.write(
+      envFilePath,
+      [
+        "PLAUD_AUTH_TOKEN=test-jwt-token",
+        "PLAUD_DEVICE_TAG=test-device-tag",
+        "PLAUD_USER_HASH=test-user-hash",
+        "PLAUD_DEVICE_ID=test-device-id",
+        "PLAUD_API_BASE_URL=https://api-apac1.plaud.ai",
+        "",
+      ].join("\n"),
+    );
+    process.env.PLAUD_ENV_FILE = envFilePath;
+    _resetConfigCache();
+    const mockFetch = mockFetchResponse({ code: 0 });
+    globalThis.fetch = mockFetch as any;
+
+    await plaudRequest("GET", "/user/me");
+
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api-apac1.plaud.ai/user/me");
+  });
+
+  test("env var takes precedence over .env file", async () => {
+    const envFilePath = join(tmpdir(), "plaud-mcp-baseurl-test.env");
+    await Bun.write(
+      envFilePath,
+      [
+        "PLAUD_AUTH_TOKEN=test-jwt-token",
+        "PLAUD_DEVICE_TAG=test-device-tag",
+        "PLAUD_USER_HASH=test-user-hash",
+        "PLAUD_DEVICE_ID=test-device-id",
+        "PLAUD_API_BASE_URL=https://api-apac1.plaud.ai",
+        "",
+      ].join("\n"),
+    );
+    process.env.PLAUD_ENV_FILE = envFilePath;
+    process.env.PLAUD_API_BASE_URL = "https://api-euc1.plaud.ai";
+    _resetConfigCache();
+    const mockFetch = mockFetchResponse({ code: 0 });
+    globalThis.fetch = mockFetch as any;
+
+    await plaudRequest("GET", "/user/me");
+
+    const [url] = mockFetch.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("https://api-euc1.plaud.ai/user/me");
   });
 });
