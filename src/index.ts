@@ -20,6 +20,7 @@ Usage:
 
 Options:
   --env <path>           Path to .env credentials file
+  --base-url <url>       Plaud API base URL (default: https://api.plaud.ai; e.g. https://api-euc1.plaud.ai for EU)
   --browser <path>       Use a specific browser binary for login
   --log-level <level>    Set log verbosity: debug, info, warn, error (default: info)
 
@@ -39,6 +40,7 @@ Or add to .mcp.json (project) or ~/.claude.json (global):
 
 Environment variables:
   PLAUD_ENV_FILE         Path to .env credentials file
+  PLAUD_API_BASE_URL     Plaud API base URL (e.g. https://api-euc1.plaud.ai for EU)
   CHROME_PATH            Path to browser binary for login
   PLAUD_LOG_LEVEL        Log verbosity (debug, info, warn, error)`);
   process.exit(0);
@@ -49,9 +51,14 @@ if (process.argv.includes("--version")) {
   process.exit(0);
 }
 
+const baseUrlFlag = process.argv.indexOf("--base-url");
+if (baseUrlFlag !== -1 && process.argv[baseUrlFlag + 1]) {
+  process.env.PLAUD_API_BASE_URL = process.argv[baseUrlFlag + 1];
+}
+
 if (process.argv.includes("--login")) {
-  const login = await import("./login.js");
-  await login.default;
+  const { main: loginMain } = await import("./login.js");
+  await loginMain();
   process.exit(0);
 }
 

@@ -99,6 +99,8 @@ This opens your browser to web.plaud.ai. Sign in normally — auth credentials a
 
 Chrome, Chromium, Brave, Edge, and Firefox are auto-detected on Linux, macOS, and Windows. For other browsers, pass `--browser /path/to/browser`.
 
+**Non-US accounts:** Plaud serves regional API endpoints (e.g. `https://api-euc1.plaud.ai` for EU, `https://api-apac1.plaud.ai` for APAC). The login flow auto-detects which one your account uses, but the server still needs to know where to call — set `PLAUD_API_BASE_URL` in your `.env` (or pass `--base-url <url>` on launch). The default is `https://api.plaud.ai`.
+
 ### 3. Configure Claude Code
 
 The server looks for credentials in this order: `--env` flag, then `PLAUD_ENV_FILE` environment variable, then `.env` in the current working directory.
@@ -146,6 +148,7 @@ Restart Claude Code for the MCP server to connect.
 | Flag | Description | Applies to |
 |------|-------------|------------|
 | `--env <path>` | Path to `.env` credentials file | login, server |
+| `--base-url <url>` | Plaud API base URL (e.g. `https://api-euc1.plaud.ai` for EU). Default: `https://api.plaud.ai` | server |
 | `--browser <path>` | Path to browser binary | login |
 | `--log-level <level>` | Set log verbosity: `debug`, `info`, `warn`, `error` (default: `info`) | server |
 
@@ -154,6 +157,7 @@ Restart Claude Code for the MCP server to connect.
 | Variable | Description | Default |
 |----------|-------------|---------|
 | `PLAUD_ENV_FILE` | Path to `.env` file with credentials (overridden by `--env`) | `.env` in current directory |
+| `PLAUD_API_BASE_URL` | Plaud API base URL — set this if your account is in a non-US region (overridden by `--base-url`) | `https://api.plaud.ai` |
 | `CHROME_PATH` | Path to browser binary (overridden by `--browser`) | Auto-detected |
 | `PLAUD_LOG_LEVEL` | Log verbosity (overridden by `--log-level`) | `info` |
 
@@ -253,6 +257,7 @@ test/
 ├── content.test.ts
 ├── mutations.test.ts
 ├── folders.test.ts
+├── login.test.ts
 └── server.test.ts
 ```
 

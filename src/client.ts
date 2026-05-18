@@ -2,13 +2,14 @@ import { resolveEnvPath } from "./env.js";
 import { logger } from "./logger.js";
 import type { z } from "zod";
 
-const BASE_URL = process.env.PLAUD_API_BASE_URL || "https://api.plaud.ai";
+const DEFAULT_BASE_URL = "https://api.plaud.ai";
 
 interface EnvConfig {
   authToken: string;
   deviceTag: string;
   userHash: string;
   deviceId: string;
+  baseUrl: string;
 }
 
 let cachedConfig: EnvConfig | null = null;
@@ -31,18 +32,24 @@ async function loadEnv(): Promise<EnvConfig> {
     vars[trimmed.slice(0, eq).trim()] = trimmed.slice(eq + 1).trim();
   }
 
+  const baseUrl =
+    process.env.PLAUD_API_BASE_URL ||
+    vars.PLAUD_API_BASE_URL ||
+    DEFAULT_BASE_URL;
+
   cachedConfig = {
     authToken: vars.PLAUD_AUTH_TOKEN ?? "",
     deviceTag: vars.PLAUD_DEVICE_TAG ?? "",
     userHash: vars.PLAUD_USER_HASH ?? "",
     deviceId: vars.PLAUD_DEVICE_ID ?? "",
+    baseUrl,
   };
 
   if (!cachedConfig.authToken) {
     throw new Error("PLAUD_AUTH_TOKEN is missing from .env file");
   }
 
-  logger.debug("Loaded credentials", { envPath });
+  logger.debug("Loaded credentials", { envPath, baseUrl });
   return cachedConfig;
 }
 
@@ -73,7 +80,7 @@ export async function plaudRequest<T = unknown>(
 
   logger.info(`${method} ${path}`, body !== undefined ? { body: JSON.stringify(body) } : undefined);
 
-  const res = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${config.baseUrl}${path}`, {
     method,
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
